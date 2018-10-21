@@ -18,10 +18,10 @@ POLLING_FREQ = 1.
 pAddress    = lambda arg: arg
 pButton     = lambda arg: int(arg)
 pLevel      = lambda arg: int(arg)
-pLedState   = lambda arg: [ int(n) for n in arg ]
+pLedState   = lambda arg: [int(n) for n in arg]
 pEnabled    = lambda arg: 'enabled' == arg
 
-NORM = lambda x: (x,pAddress,pButton)
+NORM = lambda x: (x, pAddress, pButton)
 
 # Callback types
 HW_LIGHT_CHANGED            = 'light_changed'
@@ -34,6 +34,7 @@ HW_LIGHT_CHANGED            = 'light_changed'
 HW_KEYPAD_ENABLE_CHANGED    = 'keypad_enable_changed'
 
 class Homeworks(Thread):
+    """Interface with a Lutron Homeworks 4/8 Series system."""
     _actions = {
         "KBP":      NORM(HW_BUTTON_PRESSED),
         "KBR":      NORM(HW_BUTTON_RELEASED),
@@ -47,17 +48,16 @@ class Homeworks(Thread):
         "SVBR":     NORM(HW_BUTTON_RELEASED),
         "SVBH":     NORM(HW_BUTTON_HOLD),
         "SVBDT":    NORM(HW_BUTTON_DOUBLE_TAP),
-        "KLS":      (HW_KEYPAD_LED_CHANGED,pAddress,pLedState),
-        "DL":       (HW_LIGHT_CHANGED,pAddress,pLevel),
-        "KES":      (HW_KEYPAD_ENABLE_CHANGED,pAddress,pEnabled),
+        "KLS":      (HW_KEYPAD_LED_CHANGED, pAddress, pLedState),
+        "DL":       (HW_LIGHT_CHANGED, pAddress, pLevel),
+        "KES":      (HW_KEYPAD_ENABLE_CHANGED, pAddress, pEnabled),
     }
 
-    def __init__(self, host, port, callback, pollingFreq=1):
+    def __init__(self, host, port, callback):
         Thread.__init__(self)
         self._host = host
         self._port = port
         self._callback = callback
-        self._pollingFreq = pollingFreq
         
         self._running = False
         self._connect()
@@ -73,29 +73,29 @@ class Homeworks(Thread):
         self._send('DLMON')         # Monitor dimmer levels
         self._send('KLMON')         # Monitor keypad LED states
 
-    def _send(self,command):
+    def _send(self, command):
         self._telnet.write((command+'\n').encode('utf8'))
 
-    def cmdFadeDim(self,intensity,fadeTime,delayTime,addr):
-        self._send('FADEDIM, %d, %d, %d, %s' % (intensity,fadeTime,delayTime,addr)
+    def cmdFadeDim(self, intensity, fadeTime, delayTime, addr):
+        self._send('FADEDIM, %d, %d, %d, %s' % \
+                (intensity, fadeTime, delayTime, addr)
 
-    def cmdRequestDimmerLevel(self,addr):
+    def cmdRequestDimmerLevel(self, addr):
         self._send('RDL, %s' % addr)
 
     def run(self):
         self._running = True
         while self._running:
-            input = self._telnet.read_until(b'\r',self._pollingFreq)
+            input = self._telnet.read_until(b'\r', POLLING_FREQ)
             args = input.decode('utf-8').split(', ')
-            action = self._actions.get(args[0],None)
+            action = self._actions.get(args[0], None)
             if action and len(args) == len(action):
-                pArgs = [ parser(arg) for parser,arg in zip(action[1:],args[1:]) ]
+                pArgs = [parser(arg) for parser, arg in zip(action[1:],args[1:])]
                 self._callback( args[0], pArgs )
 
     def close(self):
         self._running = False
         if self._telnet:
-            time.sleep(self._pollingFreq)
+            time.sleep(POLLING_FREQ)
             self._telnet.close()
             self._telnet = None
-
