@@ -39,8 +39,10 @@ class HomeworksLight(HomeworksDevice,Light):
     """Homeworks Light."""
 
     def __init__(self,controller,addr,name):
-        self._controller = controller
         HomeworksDevice.__init__(controller,addr,name)
+        self._fadeTime = 5  # FIX: This should be an optional parameter
+        self._level = None
+        self._controller.cmdRequestDimmerLevel(addr) 
 
     @property
     def supported_features(self):
@@ -48,17 +50,20 @@ class HomeworksLight(HomeworksDevice,Light):
 
     def turn_on(self,**kwargs):
         if ATTR_BRIGHTNESS in kwargs:
-            brightness = kwargs[ATTR_BRIGHTNESS]
+            self.brightness = kwargs[ATTR_BRIGHTNESS]
         else:
-            brightness = 255
-        self._dev.level = to_home_level(brightness)
+            self.brightness = 255
 
     def turn_off(self,**kwargs):
-        self.level = 0
+        self.brightness = 0
 
     @property
     def brightness(self):
-        return to_hass_level(self._dev.level)
+        return self._level
+
+    @brightness.setter(self,level):
+        self._controller.cmdFadeDim(to_home_level(level),self._fadeTime,0,self._addr)
+        self._level = level
 
     @property
     def device_state_attributes(self):
@@ -66,13 +71,10 @@ class HomeworksLight(HomeworksDevice,Light):
 
     @property
     def is_on(self):
-        pass
-
-    def update(self):
-        pass
+        return self._level == 0
 
     def _callback(self,msgType,values):
         if msgType==HW_LIGHT_CHANGED:
-            self._brightness = to_hass_level(values[1])
+            self._level = to_hass_level(values[1])
             return True
         return False

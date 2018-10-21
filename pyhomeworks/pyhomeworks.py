@@ -76,6 +76,12 @@ class Homeworks(Thread):
     def _send(self,command):
         self._telnet.write((command+'\n').encode('utf8'))
 
+    def cmdFadeDim(self,intensity,fadeTime,delayTime,addr):
+        self._send('FADEDIM, %d, %d, %d, %s' % (intensity,fadeTime,delayTime,addr)
+
+    def cmdRequestDimmerLevel(self,addr):
+        self._send('RDL, %s' % addr)
+
     def run(self):
         self._running = True
         while self._running:
