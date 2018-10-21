@@ -1,0 +1,25 @@
+homeworks:
+  host: 192.168.2.55
+  port: 4008
+
+light:  
+  - platform: homeworks
+    dimmers:
+      - 02:08:01:15: "Lower Stairs"
+      - 02:08:01:25: "Upper Stairs"
+
+binary-sensor:
+  - platform: homeworks
+    keypads:
+      - 02:08:02:05:
+        name: "Family Room Keypad"
+        buttons:
+          - 0: "Button1"
+          - 1: "Button2"
+      - 02:08:02:02:
+        name: "Kitchen Keypad"
+        buttons:
+          - 0: "Button1"
+ 
+
+
