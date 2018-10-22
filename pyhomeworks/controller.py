@@ -9,9 +9,12 @@ from homeassistant.const import (
     EVENT_HOMEASSISTANT_STOP, CONF_HOST, CONF_PORT)
 import homeassistant.helpers.config_validation as cv
 
+# FIX: This is not allowed to float freely
+from pyhomeworks import Homeworks
+
 REQUIREMENTS = ['pyhomeworks==0.0.1']
 
-_LOGGER = logging.getlogger(__name__)
+_LOGGER = logging.getLogger(__name__)
 
 DOMAIN = 'homeworks'
 
@@ -34,7 +37,7 @@ CONFIG_SCHEMA = vol.Schema({
 
 
 def setup(hass, base_config):
-    from homeworks import Homeworks
+    """Setup Homeworks controller."""
 
     hass.data[HOMEWORKS_CONTROLLER] = None
 
@@ -42,7 +45,7 @@ def setup(hass, base_config):
     host = config[CONF_HOST]
     port = config[CONF_PORT]
 
-    controller = Homeworks(host, port)
+    controller = HomeworksController(host, port)
 
     def cleanup(event):
         controller.close()
@@ -51,37 +54,52 @@ def setup(hass, base_config):
     hass.data[HOMEWORKS_CONTROLLER] = controller
     return True
 
-class HomeworksController():
-    def __init__():
-        self._homeworks = Homeworks(host,port,self._callback)
+class HomeworksController(object):
+    """Interface between HASS and Homeworks controller."""
+
+    def __init__(self, host, port):
+        self._homeworks = Homeworks(host, port, self._callback)
         self._subscribers = {}
 
-    def register(self,device):
-        if addr not in self._subscribers:
-            self._subscribers[addr] = []
-        self._subscribers[addr].append(device)
+    def register(self, device):
+        """Add a device to subscribe to events."""
+        if device.addr not in self._subscribers:
+            self._subscribers[device.addr] = []
+        self._subscribers[device.addr].append(device)
 
-    def _callback(self,addr,msgType,values):
+    def _callback(self, addr, msg_type, values):
         if addr in self._subscribers:
             for sub in self._subscribers[addr]:
-                if sub._callback(msgType,values):
+                if sub.callback(msg_type, values):
                     sub.schedule_update_ha_state()
+
+    def close(self):
+        """Close the connection."""
+        self._homeworks.close()
 
 
 class HomeworksDevice():
-    def __init__(self,controller,addr,name):
+    """Base class of a Homeworks device."""
+    def __init__(self, controller, addr, name):
         self._addr = addr
         self._name = name
-        contoller.register(self)
+        controller.register(self)
+
+    @property
+    def addr(self):
+        """Device address."""
+        return self._addr
 
     @property
     def name(self):
+        """Device name."""
         return self._name
 
     @property
     def should_poll(self):
+        """No need to poll."""
         return False
 
-    def _callback(self,msgType,values):
+    def callback(self, msg_type, values):
+        """Dummy callback that should be implemented by devices."""
         return False
-

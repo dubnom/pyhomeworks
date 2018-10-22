@@ -15,23 +15,22 @@ import telnetlib
 POLLING_FREQ = 1.
 
 # Response parsers
-pAddress    = lambda arg: arg
-pButton     = lambda arg: int(arg)
-pLevel      = lambda arg: int(arg)
-pLedState   = lambda arg: [int(n) for n in arg]
-pEnabled    = lambda arg: 'enabled' == arg
+P_ADDRESS = lambda arg: arg
+P_BUTTON = lambda arg: int(arg)
+P_ENABLED = lambda arg: arg == 'enabled'
+P_LEVEL = lambda arg: int(arg)
+P_LEDSTATE = lambda arg: [int(n) for n in arg]
 
-NORM = lambda x: (x, pAddress, pButton)
+NORM = lambda x: (x, P_ADDRESS, P_BUTTON)
 
 # Callback types
-HW_LIGHT_CHANGED            = 'light_changed'
-HW_BUTTON_PRESSED           = 'button_pressed'
-HW_BUTTON_RELEASED          = 'button_released'
-HW_BUTTON_HOLD              = 'button_hold'
-HW_BUTTON_DOUBLE_TAP        = 'button_double_tap'
-HW_KEYPAD_LED_CHANGED       = 'keypad_led_changed'
-HW_LIGHT_CHANGED            = 'light_changed'
-HW_KEYPAD_ENABLE_CHANGED    = 'keypad_enable_changed'
+HW_BUTTON_DOUBLE_TAP = 'button_double_tap'
+HW_BUTTON_HOLD = 'button_hold'
+HW_BUTTON_PRESSED = 'button_pressed'
+HW_BUTTON_RELEASED = 'button_released'
+HW_KEYPAD_ENABLE_CHANGED = 'keypad_enable_changed'
+HW_KEYPAD_LED_CHANGED = 'keypad_led_changed'
+HW_LIGHT_CHANGED = 'light_changed'
 
 class Homeworks(Thread):
     """Interface with a Lutron Homeworks 4/8 Series system."""
@@ -40,17 +39,17 @@ class Homeworks(Thread):
         "KBR":      NORM(HW_BUTTON_RELEASED),
         "KBH":      NORM(HW_BUTTON_HOLD),
         "KBDT":     NORM(HW_BUTTON_DOUBLE_TAP),
-        "DBP":      NORM(HW_BUTTON_PRESSED), 
+        "DBP":      NORM(HW_BUTTON_PRESSED),
         "DBR":      NORM(HW_BUTTON_RELEASED),
         "DBH":      NORM(HW_BUTTON_HOLD),
         "DBDT":     NORM(HW_BUTTON_DOUBLE_TAP),
-        "SVBP":     NORM(HW_BUTTON_PRESSED),      
+        "SVBP":     NORM(HW_BUTTON_PRESSED),
         "SVBR":     NORM(HW_BUTTON_RELEASED),
         "SVBH":     NORM(HW_BUTTON_HOLD),
         "SVBDT":    NORM(HW_BUTTON_DOUBLE_TAP),
-        "KLS":      (HW_KEYPAD_LED_CHANGED, pAddress, pLedState),
-        "DL":       (HW_LIGHT_CHANGED, pAddress, pLevel),
-        "KES":      (HW_KEYPAD_ENABLE_CHANGED, pAddress, pEnabled),
+        "KLS":      (HW_KEYPAD_LED_CHANGED, P_ADDRESS, P_LEDSTATE),
+        "DL":       (HW_LIGHT_CHANGED, P_ADDRESS, P_LEVEL),
+        "KES":      (HW_KEYPAD_ENABLE_CHANGED, P_ADDRESS, P_ENABLED),
     }
 
     def __init__(self, host, port, callback):
@@ -58,14 +57,15 @@ class Homeworks(Thread):
         self._host = host
         self._port = port
         self._callback = callback
-        
+        self._telnet = None
+
         self._running = False
         self._connect()
         self.start()
 
     def _connect(self):
         # Add userID and password
-        self._telnet = telnetlib.Telnet(self._host,self._port)
+        self._telnet = telnetlib.Telnet(self._host, self._port)
         # Setup interface and subscribe to events
         self._send('PROMPTOFF')     # No prompt is needed
         self._send('KBMON')         # Monitor keypad events
@@ -76,24 +76,27 @@ class Homeworks(Thread):
     def _send(self, command):
         self._telnet.write((command+'\n').encode('utf8'))
 
-    def cmdFadeDim(self, intensity, fadeTime, delayTime, addr):
+    def fade_dim(self, intensity, fade_time, delay_time, addr):
+        """Change the brightness of a light."""
         self._send('FADEDIM, %d, %d, %d, %s' % \
-                (intensity, fadeTime, delayTime, addr)
+                (intensity, fade_time, delay_time, addr))
 
-    def cmdRequestDimmerLevel(self, addr):
+    def request_dinner_level(self, addr):
+        """Request the controller to return brightness."""
         self._send('RDL, %s' % addr)
 
     def run(self):
         self._running = True
         while self._running:
-            input = self._telnet.read_until(b'\r', POLLING_FREQ)
-            args = input.decode('utf-8').split(', ')
-            action = self._actions.get(args[0], None)
-            if action and len(args) == len(action):
-                pArgs = [parser(arg) for parser, arg in zip(action[1:],args[1:])]
-                self._callback( args[0], pArgs )
+            data = self._telnet.read_until(b'\r', POLLING_FREQ)
+            raw_args = data.decode('utf-8').split(', ')
+            action = self._actions.get(raw_args[0], None)
+            if action and len(raw_args) == len(action):
+                args = [parser(arg) for parser, arg in zip(action[1:], raw_args[1:])]
+                self._callback(args[0], args)
 
     def close(self):
+        """Close the connection to the controller."""
         self._running = False
         if self._telnet:
             time.sleep(POLLING_FREQ)
