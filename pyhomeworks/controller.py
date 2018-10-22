@@ -1,5 +1,7 @@
 """
 Support for controlling Lutron Homeworks Series 4 and 8 systems.
+
+Michael Dubno - 2018 - New York
 """
 import logging
 
@@ -9,24 +11,13 @@ from homeassistant.const import (
     EVENT_HOMEASSISTANT_STOP, CONF_HOST, CONF_PORT)
 import homeassistant.helpers.config_validation as cv
 
-# FIX: This is not allowed to float freely
-from pyhomeworks import Homeworks
-
 REQUIREMENTS = ['pyhomeworks==0.0.1']
 
 _LOGGER = logging.getLogger(__name__)
 
 DOMAIN = 'homeworks'
 
-CONF_DEVICES = 'devices'
-CONF_DIMMERS = 'dimmers'
-CONF_KEYPADS = 'keypads'
-CONF_BUTTONS = 'buttons'
-
 HOMEWORKS_CONTROLLER = 'homeworks'
-HOMEWORKS_DEVICES = 'devices'
-HOMEWORKS_DIMMERS = 'dimmers'
-HOMEWORKS_KEYPADS = 'keypads'
 
 CONFIG_SCHEMA = vol.Schema({
     DOMAIN: vol.Schema({
@@ -37,7 +28,28 @@ CONFIG_SCHEMA = vol.Schema({
 
 
 def setup(hass, base_config):
-    """Setup Homeworks controller."""
+    """Start Homeworks controller."""
+    from pyhomeworks import Homeworks
+
+    class HomeworksController(Homeworks):
+        """Interface between HASS and Homeworks controller."""
+
+        def __init__(self, host, port):
+            """Host and port of Lutron Homeworks controller."""
+            self._subscribers = {}
+            Homeworks.__init__(host, port, self._callback)
+
+        def register(self, device):
+            """Add a device to subscribe to events."""
+            if device.addr not in self._subscribers:
+                self._subscribers[device.addr] = []
+            self._subscribers[device.addr].append(device)
+
+        def _callback(self, addr, msg_type, values):
+            if addr in self._subscribers:
+                for sub in self._subscribers[addr]:
+                    if sub.callback(msg_type, values):
+                        sub.schedule_update_ha_state()
 
     hass.data[HOMEWORKS_CONTROLLER] = None
 
@@ -54,33 +66,12 @@ def setup(hass, base_config):
     hass.data[HOMEWORKS_CONTROLLER] = controller
     return True
 
-class HomeworksController(object):
-    """Interface between HASS and Homeworks controller."""
-
-    def __init__(self, host, port):
-        self._homeworks = Homeworks(host, port, self._callback)
-        self._subscribers = {}
-
-    def register(self, device):
-        """Add a device to subscribe to events."""
-        if device.addr not in self._subscribers:
-            self._subscribers[device.addr] = []
-        self._subscribers[device.addr].append(device)
-
-    def _callback(self, addr, msg_type, values):
-        if addr in self._subscribers:
-            for sub in self._subscribers[addr]:
-                if sub.callback(msg_type, values):
-                    sub.schedule_update_ha_state()
-
-    def close(self):
-        """Close the connection."""
-        self._homeworks.close()
-
 
 class HomeworksDevice():
     """Base class of a Homeworks device."""
+
     def __init__(self, controller, addr, name):
+        """Controller, address, and name of the device."""
         self._addr = addr
         self._name = name
         controller.register(self)
@@ -101,5 +92,5 @@ class HomeworksDevice():
         return False
 
     def callback(self, msg_type, values):
-        """Dummy callback that should be implemented by devices."""
+        """Must be replaced with device callbacks."""
         return False

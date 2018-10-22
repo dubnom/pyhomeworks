@@ -1,31 +1,34 @@
 """
 Support for Lutron Homeworks Series 4/8 keypads.
+
+Michael Dubno - 2018 - New York
 """
 import logging
 
-from homeassistant.helpers.entities import (
-        ToggleEntity)
 from homeassistant.components.binary_sensor import (
         BinarySensorDevice, PLATFORM_SCHEMA)
 from homeassistant.components.homeworks import (
-        HomeworksDevice, HOMEWORKS_DEVICES, HOMEWORKS_CONTROLLER,
-        HOMEWORKS_KEYPADS, CONF_BUTTONS)
+        HomeworksDevice, HOMEWORKS_CONTROLLER)
+from homeassistant.const import CONF_NAME
+import homeassistant.helpers.config_validation as cv
 
 _LOGGER = logging.getlogger(__name__)
 
 DEPENDENCIES = ['homeworks']
+REQUIREMENTS = ['pyhomeworks==0.0.1']
 
-_BUTTON_SCHEMA = vol.Schema({
-    cv.int: cv.string
-})
+CONF_KEYPADS = 'keypads'
+CONF_ADDR = 'addr'
+CONF_BUTTONS = 'buttons'
 
-_SENSORS_SCHEMA = vol.Schema({
+BUTTON_SCHEMA = vol.Schema({cv.int: cv.string})
+BUTTONS_SCHEMA = vol.Schema({
+    vol.Required(CONF_ADDR): cv.string,
     vol.Required(CONF_NAME): cv.string,
-    vol.Required(CONF_BUTTONS): vol.All(cv.ensure_list, [_BUTTON_SCHEMA])
+    vol.Required(CONF_BUTTONS): vol.All(cv.ensure_list, [BUTTON_SCHEMA])
 })
-
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
-    vol.Required(CONF_KEYPADS): vol.All(cv.ensure_list, [_SENSORS_SCHEMA])
+    vol.Required(CONF_KEYPADS): vol.All(cv.ensure_list, [BUTTONS_SCHEMA])
 })
 
 
@@ -33,37 +36,42 @@ def setup_platform(hass, config, add_entities, discover_info=None):
     """Set up the Homeworks keypads."""
     controller = hass.data[HOMEWORKS_CONTROLLER]
     devs = []
-    for addr,data in config.get(CONF_KEYPADS)
+    for addr, data in config.get(CONF_KEYPADS):
         name = config.get(CONF_NAME)
         buttons = config.get(CONF_BUTTONS)
-        for num,title in buttons.items():
-            dev = HomeworksKeypad(controller,addr,num,name+'.'+title)
+        for num, title in buttons.items():
+            dev = HomeworksKeypad(controller, addr, num, name + '.' + title)
             devs.append(dev)
-    add_entitites(devs, True)
+    add_entities(devs, True)
     return True
 
-class HomeworksKeypad(HomeworksDevice,BinarySensorDevice):
+
+class HomeworksKeypad(HomeworksDevice, BinarySensorDevice):
     """Homeworks Keypad."""
 
-    def __init__(self,controller,addr,num,name):
+    def __init__(self, controller, addr, num, name):
+        """Create keypad with addr, num, and name."""
         self._num = num
         self._state = None
-        HomeworksDevice.__init__(controller,addr,name)
+        HomeworksDevice.__init__(controller, addr, name)
 
     @property
     def is_on(self):
+        """Return state of the button."""
         return self._state
 
     @property
     def device_state_attributes(self):
-        return { 'Homeworks Address': self._addr }
+        """Return supported attributes."""
+        return {'Homeworks Address': self._addr}
 
-    def _callback(self,msgType,values):
-        if msgType==HW_BUTTON_PRESSED:
+    def _callback(self, msgType, values):
+        from pyhomeworks import HW_BUTTON_PRESSED, HW_BUTTON_RELEASED
+
+        if msgType == HW_BUTTON_PRESSED:
             self._state = True
-        elif  msgType==HW_BUTTON_RELEASED:
+        elif msgType == HW_BUTTON_RELEASED:
             self._state = False
         else:
             return False
         return True
-

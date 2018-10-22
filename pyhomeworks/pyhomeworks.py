@@ -1,6 +1,8 @@
 """
-Homeworks is a partial implementation of an interface to Lutron Homeworks
-Series4 and Series8 systems.
+Homeworks.
+
+A partial implementation of an interface to series-4 and series-8 Lutron
+Homeworks systems.
 
 The Series4/8 is connected to an RS232 port to an Ethernet adaptor (NPort)
 and uses the telnet protocol for communication.
@@ -14,14 +16,31 @@ import telnetlib
 
 POLLING_FREQ = 1.
 
-# Response parsers
-P_ADDRESS = lambda arg: arg
-P_BUTTON = lambda arg: int(arg)
-P_ENABLED = lambda arg: arg == 'enabled'
-P_LEVEL = lambda arg: int(arg)
-P_LEDSTATE = lambda arg: [int(n) for n in arg]
 
-NORM = lambda x: (x, P_ADDRESS, P_BUTTON)
+# Response parsers (thank Flakes8 and pylint for this...)
+def _p_address(arg):
+    return arg
+
+
+def _p_button(arg):
+    return int(arg)
+
+
+def _p_enabled(arg):
+    return arg == 'enabled'
+
+
+def _p_level(arg):
+    return int(arg)
+
+
+def _p_ledstate(arg):
+    return [int(num) for num in arg]
+
+
+def _norm(x):
+    return (x, _p_address, _p_button)
+
 
 # Callback types
 HW_BUTTON_DOUBLE_TAP = 'button_double_tap'
@@ -32,27 +51,30 @@ HW_KEYPAD_ENABLE_CHANGED = 'keypad_enable_changed'
 HW_KEYPAD_LED_CHANGED = 'keypad_led_changed'
 HW_LIGHT_CHANGED = 'light_changed'
 
+ACTIONS = {
+    "KBP":      _norm(HW_BUTTON_PRESSED),
+    "KBR":      _norm(HW_BUTTON_RELEASED),
+    "KBH":      _norm(HW_BUTTON_HOLD),
+    "KBDT":     _norm(HW_BUTTON_DOUBLE_TAP),
+    "DBP":      _norm(HW_BUTTON_PRESSED),
+    "DBR":      _norm(HW_BUTTON_RELEASED),
+    "DBH":      _norm(HW_BUTTON_HOLD),
+    "DBDT":     _norm(HW_BUTTON_DOUBLE_TAP),
+    "SVBP":     _norm(HW_BUTTON_PRESSED),
+    "SVBR":     _norm(HW_BUTTON_RELEASED),
+    "SVBH":     _norm(HW_BUTTON_HOLD),
+    "SVBDT":    _norm(HW_BUTTON_DOUBLE_TAP),
+    "KLS":      (HW_KEYPAD_LED_CHANGED, _p_address, _p_ledstate),
+    "DL":       (HW_LIGHT_CHANGED, _p_address, _p_level),
+    "KES":      (HW_KEYPAD_ENABLE_CHANGED, _p_address, _p_enabled),
+}
+
+
 class Homeworks(Thread):
     """Interface with a Lutron Homeworks 4/8 Series system."""
-    _actions = {
-        "KBP":      NORM(HW_BUTTON_PRESSED),
-        "KBR":      NORM(HW_BUTTON_RELEASED),
-        "KBH":      NORM(HW_BUTTON_HOLD),
-        "KBDT":     NORM(HW_BUTTON_DOUBLE_TAP),
-        "DBP":      NORM(HW_BUTTON_PRESSED),
-        "DBR":      NORM(HW_BUTTON_RELEASED),
-        "DBH":      NORM(HW_BUTTON_HOLD),
-        "DBDT":     NORM(HW_BUTTON_DOUBLE_TAP),
-        "SVBP":     NORM(HW_BUTTON_PRESSED),
-        "SVBR":     NORM(HW_BUTTON_RELEASED),
-        "SVBH":     NORM(HW_BUTTON_HOLD),
-        "SVBDT":    NORM(HW_BUTTON_DOUBLE_TAP),
-        "KLS":      (HW_KEYPAD_LED_CHANGED, P_ADDRESS, P_LEDSTATE),
-        "DL":       (HW_LIGHT_CHANGED, P_ADDRESS, P_LEVEL),
-        "KES":      (HW_KEYPAD_ENABLE_CHANGED, P_ADDRESS, P_ENABLED),
-    }
 
     def __init__(self, host, port, callback):
+        """Connect to controller using host, port."""
         Thread.__init__(self)
         self._host = host
         self._port = port
@@ -78,21 +100,23 @@ class Homeworks(Thread):
 
     def fade_dim(self, intensity, fade_time, delay_time, addr):
         """Change the brightness of a light."""
-        self._send('FADEDIM, %d, %d, %d, %s' % \
-                (intensity, fade_time, delay_time, addr))
+        self._send('FADEDIM, %d, %d, %d, %s' %
+                   (intensity, fade_time, delay_time, addr))
 
     def request_dinner_level(self, addr):
         """Request the controller to return brightness."""
         self._send('RDL, %s' % addr)
 
     def run(self):
+        """Read and dispatch messages from the controller."""
         self._running = True
         while self._running:
             data = self._telnet.read_until(b'\r', POLLING_FREQ)
             raw_args = data.decode('utf-8').split(', ')
-            action = self._actions.get(raw_args[0], None)
+            action = ACTIONS.get(raw_args[0], None)
             if action and len(raw_args) == len(action):
-                args = [parser(arg) for parser, arg in zip(action[1:], raw_args[1:])]
+                args = [parser(arg) for parser, arg in
+                        zip(action[1:], raw_args[1:])]
                 self._callback(args[0], args)
 
     def close(self):

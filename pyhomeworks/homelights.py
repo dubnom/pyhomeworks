@@ -1,75 +1,91 @@
 """
 Support for Lutron Homeworks Series 4/8 lights.
+
+Michael Dubno - 2018 - New York
 """
 import logging
 
 from homeassistant.components.light import (
         ATTR_BRIGHTNESS, SUPPORT_BRIGHTNESS, Light)
 from homeassistant.components.homeworks import (
-        HomeworksDevice, HOMEWORKS_DEVICES, HOMEWORKS_CONTROLLER,
-        HOMEWORKS_LIGHTS)
-
-_LOGGER = logging.getlogger(__name__)
+        HomeworksDevice, HOMEWORKS_CONTROLLER)
+from homeassistant.const import CONF_NAME
+import homeassistant.helpers.config_validation as cv
 
 DEPENDENCIES = ['homeworks']
+REQUIREMENTS = ['pyhomeworks==0.0.1']
 
-_DIMMER_SCHEMA = vol.Schema({
-    cv.string: cv.string
+_LOGGER = logging.getLogger(__name__)
+
+FADE_RATE = 5.
+
+CONF_DIMMERS = 'dimmers'
+CONF_ADDR = 'addr'
+CONF_RATE = 'rate'
+
+DIMMER_SCHEMA = vol.Schema({
+    vol.Required(CONF_ADDR): cv.string,
+    vol.Required(CONF_NAME): cv.string,
+    vol.Optional(CONF_RATE, default=FADE_RATE): cv.float,
 })
-
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
-    vol.Required(CONF_DIMMERS): vol.All(cv.ensure_list, [_DIMMER_SCHEMA])
+    vol.Required(CONF_DIMMERS): vol.All(cv.ensure_list, [DIMMER_SCHEMA])
 })
+
 
 def setup_platform(hass, config, add_entities, discover_info=None):
     """Set up the Homeworks lights."""
     controller = hass.data[HOMEWORKS_CONTROLLER]
     devs = []
-    for addr,name in config.get(CONF_DIMMERS).items()
-        dev = HomeworksLight(controller, addr, name)
+    for dimmer in config.get(CONF_DIMMERS).items():
+        dev = HomeworksLight(controller, dimmer[CONF_ADDR],
+                             dimmer[CONF_NAME], dimmer[CONF_RATE])
         devs.append(dev)
-
-    add_entitites(devs, True)
+    add_entities(devs, True)
     return True
 
-lambda TO_HOME_LEVEL(level): float((level*100.)/255.)
-lambda TO_HASS_LEVEL(level): int((level * 255.)/100.)
 
 class HomeworksLight(HomeworksDevice, Light):
     """Homeworks Light."""
 
-    def __init__(self, controller,addr, name):
-        HomeworksDevice.__init__(controller, addr,name)
-        self._fadeTime = 5  # FIX: This should be an optional parameter
+    def __init__(self, controller, addr, name, rate):
+        """Create device with Addr, name, and rate."""
+        HomeworksDevice.__init__(controller, addr, name, rate)
+        self._rate = rate
         self._level = None
-        self._controller.cmdRequestDimmerLevel(addr) 
+        self._controller.request_dimmer_level(addr)
 
     @property
     def supported_features(self):
+        """Supported features."""
         return SUPPORT_BRIGHTNESS
 
     def turn_on(self, **kwargs):
+        """Turn on the light."""
         if ATTR_BRIGHTNESS in kwargs:
             self.brightness = kwargs[ATTR_BRIGHTNESS]
         else:
             self.brightness = 255
 
     def turn_off(self, **kwargs):
+        """Turn off the light."""
         self.brightness = 0
 
     @property
     def brightness(self):
+        """Control the brightness."""
         return self._level
 
-    @brightness.setter(self, level):
+    @brightness.setter
+    def brightness(self, level):
         self._controller.fade_dim(
-                TO_HOME_LEVEL(level),
-                self._fadeTime,
+                float((level*101.)/255.), self._rate,
                 0, self._addr)
         self._level = level
 
     @property
     def device_state_attributes(self):
+        """Supported attributes."""
         return {'Homeworks Address': self._addr}
 
     @property
@@ -78,8 +94,10 @@ class HomeworksLight(HomeworksDevice, Light):
         return self._level == 0
 
     def callback(self, msg_type, values):
-        """Callback that processes device message."""
+        """Process device specific messages."""
+        from pyhomeworks import HW_LIGHT_CHANGED
+
         if msg_type == HW_LIGHT_CHANGED:
-            self._level = TO_HASS_LEVEL(values[1])
+            self._level = int((values[1] * 255.)/100.)
             return True
         return False
