@@ -4,7 +4,7 @@ Support for Lutron Homeworks Series 4/8 keypads.
 Michael Dubno - 2018 - New York
 """
 import logging
-
+import voluptuous as vol
 from homeassistant.components.binary_sensor import (
         BinarySensorDevice, PLATFORM_SCHEMA)
 from homeassistant.components.homeworks import (
@@ -12,7 +12,7 @@ from homeassistant.components.homeworks import (
 from homeassistant.const import CONF_NAME
 import homeassistant.helpers.config_validation as cv
 
-_LOGGER = logging.getlogger(__name__)
+_LOGGER = logging.getLogger(__name__)
 
 DEPENDENCIES = ['homeworks']
 REQUIREMENTS = ['pyhomeworks==0.0.1']
@@ -21,7 +21,7 @@ CONF_KEYPADS = 'keypads'
 CONF_ADDR = 'addr'
 CONF_BUTTONS = 'buttons'
 
-BUTTON_SCHEMA = vol.Schema({cv.int: cv.string})
+BUTTON_SCHEMA = vol.Schema({cv.positive_int: cv.string})
 BUTTONS_SCHEMA = vol.Schema({
     vol.Required(CONF_ADDR): cv.string,
     vol.Required(CONF_NAME): cv.string,

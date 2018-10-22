@@ -4,9 +4,7 @@ Support for controlling Lutron Homeworks Series 4 and 8 systems.
 Michael Dubno - 2018 - New York
 """
 import logging
-
 import voluptuous as vol
-
 from homeassistant.const import (
     EVENT_HOMEASSISTANT_STOP, CONF_HOST, CONF_PORT)
 import homeassistant.helpers.config_validation as cv

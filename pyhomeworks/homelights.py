@@ -4,9 +4,9 @@ Support for Lutron Homeworks Series 4/8 lights.
 Michael Dubno - 2018 - New York
 """
 import logging
-
+import voluptuous as vol
 from homeassistant.components.light import (
-        ATTR_BRIGHTNESS, SUPPORT_BRIGHTNESS, Light)
+        ATTR_BRIGHTNESS, SUPPORT_BRIGHTNESS, Light, PLATFORM_SCHEMA)
 from homeassistant.components.homeworks import (
         HomeworksDevice, HOMEWORKS_CONTROLLER)
 from homeassistant.const import CONF_NAME
@@ -23,10 +23,12 @@ CONF_DIMMERS = 'dimmers'
 CONF_ADDR = 'addr'
 CONF_RATE = 'rate'
 
+fade_rate = vol.All(vol.Coerce(float), vol.Range(min=0, max=20))
+
 DIMMER_SCHEMA = vol.Schema({
     vol.Required(CONF_ADDR): cv.string,
     vol.Required(CONF_NAME): cv.string,
-    vol.Optional(CONF_RATE, default=FADE_RATE): cv.float,
+    vol.Optional(CONF_RATE, default=FADE_RATE): fade_rate,
 })
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Required(CONF_DIMMERS): vol.All(cv.ensure_list, [DIMMER_SCHEMA])
