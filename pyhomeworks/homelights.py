@@ -39,7 +39,7 @@ def setup_platform(hass, config, add_entities, discover_info=None):
     """Set up the Homeworks lights."""
     controller = hass.data[HOMEWORKS_CONTROLLER]
     devs = []
-    for dimmer in config.get(CONF_DIMMERS).items():
+    for dimmer in config.get(CONF_DIMMERS):
         dev = HomeworksLight(controller, dimmer[CONF_ADDR],
                              dimmer[CONF_NAME], dimmer[CONF_RATE])
         devs.append(dev)
@@ -97,7 +97,7 @@ class HomeworksLight(HomeworksDevice, Light):
 
     def callback(self, msg_type, values):
         """Process device specific messages."""
-        from pyhomeworks import HW_LIGHT_CHANGED
+        from pyhomeworks.pyhomeworks import HW_LIGHT_CHANGED
 
         if msg_type == HW_LIGHT_CHANGED:
             self._level = int((values[1] * 255.)/100.)

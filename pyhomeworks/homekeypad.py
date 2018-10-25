@@ -66,7 +66,7 @@ class HomeworksKeypad(HomeworksDevice, BinarySensorDevice):
         return {'Homeworks Address': self._addr}
 
     def _callback(self, msgType, values):
-        from pyhomeworks import HW_BUTTON_PRESSED, HW_BUTTON_RELEASED
+        from pyhomeworks.pyhomeworks import HW_BUTTON_PRESSED, HW_BUTTON_RELEASED
 
         if msgType == HW_BUTTON_PRESSED:
             self._state = True

@@ -27,7 +27,7 @@ CONFIG_SCHEMA = vol.Schema({
 
 def setup(hass, base_config):
     """Start Homeworks controller."""
-    from pyhomeworks import Homeworks
+    from pyhomeworks.pyhomeworks import Homeworks
 
     class HomeworksController(Homeworks):
         """Interface between HASS and Homeworks controller."""
@@ -35,7 +35,7 @@ def setup(hass, base_config):
         def __init__(self, host, port):
             """Host and port of Lutron Homeworks controller."""
             self._subscribers = {}
-            Homeworks.__init__(host, port, self._callback)
+            Homeworks.__init__(self, host, port, self._callback)
 
         def register(self, device):
             """Add a device to subscribe to events."""
@@ -56,12 +56,12 @@ def setup(hass, base_config):
     port = config[CONF_PORT]
 
     controller = HomeworksController(host, port)
+    hass.data[HOMEWORKS_CONTROLLER] = controller
 
     def cleanup(event):
         controller.close()
 
-    hass.bus_listen_once(EVENT_HOMEASSISTANT_STOP, cleanup)
-    hass.data[HOMEWORKS_CONTROLLER] = controller
+    hass.bus.listen_once(EVENT_HOMEASSISTANT_STOP, cleanup)
     return True
 
 
