@@ -12,7 +12,11 @@ Michael Dubno - 2018 - New York
 
 from threading import Thread
 import time
-import telnetlib
+import socket
+import select
+import logging
+
+_LOGGER = logging.getLogger(__name__)
 
 POLLING_FREQ = 1.
 
@@ -79,7 +83,7 @@ class Homeworks(Thread):
         self._host = host
         self._port = port
         self._callback = callback
-        self._telnet = None
+        self._socket = None
 
         self._running = False
         self._connect()
@@ -87,7 +91,7 @@ class Homeworks(Thread):
 
     def _connect(self):
         # Add userID and password
-        self._telnet = telnetlib.Telnet(self._host, self._port)
+        self._socket = socket.create_connection((self._host, self._port))
         # Setup interface and subscribe to events
         self._send('PROMPTOFF')     # No prompt is needed
         self._send('KBMON')         # Monitor keypad events
@@ -96,33 +100,47 @@ class Homeworks(Thread):
         self._send('KLMON')         # Monitor keypad LED states
 
     def _send(self, command):
-        self._telnet.write((command+'\n').encode('utf8'))
+        self._socket.send((command+'\n').encode('utf8'))
+        _LOGGER.info('_send %s', command)
 
     def fade_dim(self, intensity, fade_time, delay_time, addr):
         """Change the brightness of a light."""
         self._send('FADEDIM, %d, %d, %d, %s' %
                    (intensity, fade_time, delay_time, addr))
 
-    def request_dinner_level(self, addr):
+    def request_dimmer_level(self, addr):
         """Request the controller to return brightness."""
         self._send('RDL, %s' % addr)
 
     def run(self):
         """Read and dispatch messages from the controller."""
         self._running = True
+        data = ''
         while self._running:
-            data = self._telnet.read_until(b'\r', POLLING_FREQ)
-            raw_args = data.decode('utf-8').split(', ')
-            action = ACTIONS.get(raw_args[0], None)
-            if action and len(raw_args) == len(action):
-                args = [parser(arg) for parser, arg in
-                        zip(action[1:], raw_args[1:])]
-                self._callback(args[0], args)
+            try:
+                readable, _, _ = select.select([self._socket], [], [], POLLING_FREQ)
+            except socket.error as err:
+                raise
+            if len(readable) != 0:
+                byte = self._socket.recv(1)
+                if byte == b'\r':
+                    self._processReceivedData(data)
+                    data = ''
+                else:
+                    data += byte.decode('utf-8')
+
+    def _processReceivedData(self, data):
+        raw_args = data.split(', ')
+        action = ACTIONS.get(raw_args[0], None)
+        if action and len(raw_args) == len(action):
+            args = [parser(arg) for parser, arg in
+                    zip(action[1:], raw_args[1:])]
+            self._callback(args[0], args)
 
     def close(self):
         """Close the connection to the controller."""
         self._running = False
-        if self._telnet:
+        if self.socket:
             time.sleep(POLLING_FREQ)
-            self._telnet.close()
-            self._telnet = None
+            self._socket.close()
+            self._socket = None

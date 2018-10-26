@@ -36,12 +36,16 @@ def setup_platform(hass, config, add_entities, discover_info=None):
     """Set up the Homeworks keypads."""
     controller = hass.data[HOMEWORKS_CONTROLLER]
     devs = []
-    for addr, data in config.get(CONF_KEYPADS):
-        name = config.get(CONF_NAME)
-        buttons = config.get(CONF_BUTTONS)
-        for num, title in buttons.items():
-            dev = HomeworksKeypad(controller, addr, num, name + '.' + title)
-            devs.append(dev)
+    for keypad in config.get(CONF_KEYPADS):
+        _LOGGER.info(keypad)
+        name = keypad.get(CONF_NAME)
+        addr = keypad.get(CONF_ADDR)
+        buttons = keypad.get(CONF_BUTTONS)
+        for button in buttons:
+            # FIX: This should be done differently
+            for num, title in button.items(): 
+                dev = HomeworksKeypad(controller, addr, num, name + '.' + title)
+                devs.append(dev)
     add_entities(devs, True)
     return True
 
@@ -53,7 +57,7 @@ class HomeworksKeypad(HomeworksDevice, BinarySensorDevice):
         """Create keypad with addr, num, and name."""
         self._num = num
         self._state = None
-        HomeworksDevice.__init__(controller, addr, name)
+        HomeworksDevice.__init__(self, controller, addr, name)
 
     @property
     def is_on(self):

@@ -52,7 +52,7 @@ class HomeworksLight(HomeworksDevice, Light):
 
     def __init__(self, controller, addr, name, rate):
         """Create device with Addr, name, and rate."""
-        HomeworksDevice.__init__(controller, addr, name, rate)
+        HomeworksDevice.__init__(self, controller, addr, name)
         self._rate = rate
         self._level = None
         self._controller.request_dimmer_level(addr)
@@ -81,7 +81,7 @@ class HomeworksLight(HomeworksDevice, Light):
     @brightness.setter
     def brightness(self, level):
         self._controller.fade_dim(
-                float((level*101.)/255.), self._rate,
+                float((level*100.)/255.), self._rate,
                 0, self._addr)
         self._level = level
 

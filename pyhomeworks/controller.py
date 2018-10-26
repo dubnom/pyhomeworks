@@ -34,8 +34,8 @@ def setup(hass, base_config):
 
         def __init__(self, host, port):
             """Host and port of Lutron Homeworks controller."""
-            self._subscribers = {}
             Homeworks.__init__(self, host, port, self._callback)
+            self._subscribers = {}
 
         def register(self, device):
             """Add a device to subscribe to events."""
@@ -48,8 +48,6 @@ def setup(hass, base_config):
                 for sub in self._subscribers[addr]:
                     if sub.callback(msg_type, values):
                         sub.schedule_update_ha_state()
-
-    hass.data[HOMEWORKS_CONTROLLER] = None
 
     config = base_config.get(DOMAIN)
     host = config[CONF_HOST]
@@ -72,7 +70,7 @@ class HomeworksDevice():
         """Controller, address, and name of the device."""
         self._addr = addr
         self._name = name
-        controller.register(self)
+        self._controller = controller
 
     @property
     def addr(self):
