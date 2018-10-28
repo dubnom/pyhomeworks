@@ -37,7 +37,6 @@ def setup_platform(hass, config, add_entities, discover_info=None):
     controller = hass.data[HOMEWORKS_CONTROLLER]
     devs = []
     for keypad in config.get(CONF_KEYPADS):
-        _LOGGER.info(keypad)
         name = keypad.get(CONF_NAME)
         addr = keypad.get(CONF_ADDR)
         buttons = keypad.get(CONF_BUTTONS)

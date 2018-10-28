@@ -101,7 +101,6 @@ class Homeworks(Thread):
 
     def _send(self, command):
         self._socket.send((command+'\n').encode('utf8'))
-        _LOGGER.info('_send %s', command)
 
     def fade_dim(self, intensity, fade_time, delay_time, addr):
         """Change the brightness of a light."""
@@ -140,7 +139,7 @@ class Homeworks(Thread):
     def close(self):
         """Close the connection to the controller."""
         self._running = False
-        if self.socket:
+        if self._socket:
             time.sleep(POLLING_FREQ)
             self._socket.close()
             self._socket = None
