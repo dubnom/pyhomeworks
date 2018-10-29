@@ -6,9 +6,9 @@ Michael Dubno - 2018 - New York
 import logging
 import voluptuous as vol
 from homeassistant.components.binary_sensor import (
-        BinarySensorDevice, PLATFORM_SCHEMA)
+    BinarySensorDevice, PLATFORM_SCHEMA)
 from homeassistant.components.homeworks import (
-        HomeworksDevice, HOMEWORKS_CONTROLLER)
+    HomeworksDevice, HOMEWORKS_CONTROLLER)
 from homeassistant.const import CONF_NAME
 import homeassistant.helpers.config_validation as cv
 
@@ -42,8 +42,9 @@ def setup_platform(hass, config, add_entities, discover_info=None):
         buttons = keypad.get(CONF_BUTTONS)
         for button in buttons:
             # FIX: This should be done differently
-            for num, title in button.items(): 
-                dev = HomeworksKeypad(controller, addr, num, name + '.' + title)
+            for num, title in button.items():
+                devname = name + '.' + title
+                dev = HomeworksKeypad(controller, addr, num, devname)
                 devs.append(dev)
     add_entities(devs, True)
     return True
@@ -68,12 +69,13 @@ class HomeworksKeypad(HomeworksDevice, BinarySensorDevice):
         """Return supported attributes."""
         return {'Homeworks Address': self._addr}
 
-    def _callback(self, msgType, values):
-        from pyhomeworks.pyhomeworks import HW_BUTTON_PRESSED, HW_BUTTON_RELEASED
+    def _callback(self, msg_type, values):
+        from pyhomeworks.pyhomeworks import (
+            HW_BUTTON_PRESSED, HW_BUTTON_RELEASED)
 
-        if msgType == HW_BUTTON_PRESSED:
+        if msg_type == HW_BUTTON_PRESSED:
             self._state = True
-        elif msgType == HW_BUTTON_RELEASED:
+        elif msg_type == HW_BUTTON_RELEASED:
             self._state = False
         else:
             return False

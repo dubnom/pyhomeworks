@@ -6,9 +6,9 @@ Michael Dubno - 2018 - New York
 import logging
 import voluptuous as vol
 from homeassistant.components.light import (
-        ATTR_BRIGHTNESS, SUPPORT_BRIGHTNESS, Light, PLATFORM_SCHEMA)
+    ATTR_BRIGHTNESS, SUPPORT_BRIGHTNESS, Light, PLATFORM_SCHEMA)
 from homeassistant.components.homeworks import (
-        HomeworksDevice, HOMEWORKS_CONTROLLER)
+    HomeworksDevice, HOMEWORKS_CONTROLLER)
 from homeassistant.const import CONF_NAME
 import homeassistant.helpers.config_validation as cv
 
@@ -23,12 +23,12 @@ CONF_DIMMERS = 'dimmers'
 CONF_ADDR = 'addr'
 CONF_RATE = 'rate'
 
-fade_rate = vol.All(vol.Coerce(float), vol.Range(min=0, max=20))
+CV_FADE_RATE = vol.All(vol.Coerce(float), vol.Range(min=0, max=20))
 
 DIMMER_SCHEMA = vol.Schema({
     vol.Required(CONF_ADDR): cv.string,
     vol.Required(CONF_NAME): cv.string,
-    vol.Optional(CONF_RATE, default=FADE_RATE): fade_rate,
+    vol.Optional(CONF_RATE, default=FADE_RATE): CV_FADE_RATE,
 })
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Required(CONF_DIMMERS): vol.All(cv.ensure_list, [DIMMER_SCHEMA])
@@ -81,8 +81,8 @@ class HomeworksLight(HomeworksDevice, Light):
     @brightness.setter
     def brightness(self, level):
         self._controller.fade_dim(
-                float((level*100.)/255.), self._rate,
-                0, self._addr)
+            float((level*100.)/255.), self._rate,
+            0, self._addr)
         self._level = level
 
     @property
