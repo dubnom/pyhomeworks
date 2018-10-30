@@ -43,7 +43,7 @@ def setup_platform(hass, config, add_entities, discover_info=None):
         for button in buttons:
             # FIX: This should be done differently
             for num, title in button.items():
-                devname = name + '.' + title
+                devname = name + '_' + title
                 dev = HomeworksKeypad(controller, addr, num, devname)
                 devs.append(dev)
     add_entities(devs, True)
