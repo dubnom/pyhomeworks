@@ -17,7 +17,7 @@ REQUIREMENTS = ['pyhomeworks==0.0.1']
 
 _LOGGER = logging.getLogger(__name__)
 
-FADE_RATE = 5.
+FADE_RATE = 2.
 
 CONF_DIMMERS = 'dimmers'
 CONF_ADDR = 'addr'
@@ -93,7 +93,7 @@ class HomeworksLight(HomeworksDevice, Light):
     @property
     def is_on(self):
         """Is the light on/off."""
-        return self._level == 0
+        return self._level != 0
 
     def callback(self, msg_type, values):
         """Process device specific messages."""

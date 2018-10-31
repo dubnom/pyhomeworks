@@ -43,11 +43,13 @@ def setup(hass, base_config):
                 self._subscribers[device.addr] = []
             self._subscribers[device.addr].append(device)
 
-        def _callback(self, addr, msg_type, values):
-            if addr in self._subscribers:
-                for sub in self._subscribers[addr]:
-                    if sub.callback(msg_type, values):
-                        sub.schedule_update_ha_state()
+        def _callback(self, msg_type, values):
+            _LOGGER.info('_callback: %s, %s', msg_type, values)
+            addr = values[0]
+            for sub in self._subscribers.get(addr,[]):
+                _LOGGER.info("_callback: %s", sub)
+                if sub.callback(msg_type, values):
+                    sub.schedule_update_ha_state()
 
     config = base_config.get(DOMAIN)
     host = config[CONF_HOST]
@@ -71,6 +73,7 @@ class HomeworksDevice():
         self._addr = addr
         self._name = name
         self._controller = controller
+        controller.register(self)
 
     @property
     def addr(self):

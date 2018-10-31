@@ -17,6 +17,7 @@ _LOGGER = logging.getLogger(__name__)
 DEPENDENCIES = ['homeworks']
 REQUIREMENTS = ['pyhomeworks==0.0.1']
 
+EVENT_BUTTON_PRESSED = 'button_pressed'
 CONF_KEYPADS = 'keypads'
 CONF_ADDR = 'addr'
 CONF_BUTTONS = 'buttons'
@@ -55,9 +56,9 @@ class HomeworksKeypad(HomeworksDevice, BinarySensorDevice):
 
     def __init__(self, controller, addr, num, name):
         """Create keypad with addr, num, and name."""
+        HomeworksDevice.__init__(self, controller, addr, name)
         self._num = num
         self._state = None
-        HomeworksDevice.__init__(self, controller, addr, name)
 
     @property
     def is_on(self):
@@ -67,16 +68,17 @@ class HomeworksKeypad(HomeworksDevice, BinarySensorDevice):
     @property
     def device_state_attributes(self):
         """Return supported attributes."""
-        return {'Homeworks Address': self._addr}
+        return {"Homeworks Address": self._addr,
+                "Button Number": self._num}
 
-    def _callback(self, msg_type, values):
+    def callback(self, msg_type, values):
         from pyhomeworks.pyhomeworks import (
             HW_BUTTON_PRESSED, HW_BUTTON_RELEASED)
 
-        if msg_type == HW_BUTTON_PRESSED:
+        old_state = self._state
+        if msg_type == HW_BUTTON_PRESSED and values[1] == self._num:
+            self.hass.bus.fire(EVENT_BUTTON_PRESSED,{})
             self._state = True
-        elif msg_type == HW_BUTTON_RELEASED:
+        elif msg_type == HW_BUTTON_RELEASED and values[1] == self._num:
             self._state = False
-        else:
-            return False
-        return True
+        return old_state == self._state

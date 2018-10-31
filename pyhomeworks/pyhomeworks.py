@@ -99,7 +99,8 @@ class Homeworks(Thread):
         self._send('KLMON')         # Monitor keypad LED states
 
     def _send(self, command):
-        self._socket.send((command+'\n').encode('utf8'))
+        _LOGGER.info("send: %s", command)
+        self._socket.send((command+'\r').encode('utf8'))
 
     def fade_dim(self, intensity, fade_time, delay_time, addr):
         """Change the brightness of a light."""
@@ -122,18 +123,20 @@ class Homeworks(Thread):
             if len(readable) != 0:
                 byte = self._socket.recv(1)
                 if byte == b'\r':
-                    self._processReceivedData(data)
+                    if len(data) > 0:
+                        self._processReceivedData(data)
                     data = ''
-                else:
+                elif byte != '\n':
                     data += byte.decode('utf-8')
 
     def _processReceivedData(self, data):
+        _LOGGER.info("Raw: %s", data)
         raw_args = data.split(', ')
         action = ACTIONS.get(raw_args[0], None)
         if action and len(raw_args) == len(action):
             args = [parser(arg) for parser, arg in
                     zip(action[1:], raw_args[1:])]
-            self._callback(args[0], args)
+            self._callback(action[0], args)
 
     def close(self):
         """Close the connection to the controller."""
