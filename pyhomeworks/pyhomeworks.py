@@ -99,7 +99,7 @@ class Homeworks(Thread):
         self._send('KLMON')         # Monitor keypad LED states
 
     def _send(self, command):
-        _LOGGER.info("send: %s", command)
+        _LOGGER.debug("send: %s", command)
         self._socket.send((command+'\r').encode('utf8'))
 
     def fade_dim(self, intensity, fade_time, delay_time, addr):
@@ -130,7 +130,7 @@ class Homeworks(Thread):
                     data += byte.decode('utf-8')
 
     def _processReceivedData(self, data):
-        _LOGGER.info("Raw: %s", data)
+        _LOGGER.debug("Raw: %s", data)
         raw_args = data.split(', ')
         action = ACTIONS.get(raw_args[0], None)
         if action and len(raw_args) == len(action):
