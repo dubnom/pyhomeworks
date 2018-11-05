@@ -77,7 +77,8 @@ class HomeworksKeypad(HomeworksDevice, BinarySensorDevice):
 
         old_state = self._state
         if msg_type == HW_BUTTON_PRESSED and values[1] == self._num:
-            self.hass.bus.fire(EVENT_BUTTON_PRESSED,{})
+            self.hass.bus.fire(EVENT_BUTTON_PRESSED,
+                               {'entity_id': self.entity_id})
             self._state = True
         elif msg_type == HW_BUTTON_RELEASED and values[1] == self._num:
             self._state = False

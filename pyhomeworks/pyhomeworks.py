@@ -20,29 +20,13 @@ _LOGGER = logging.getLogger(__name__)
 POLLING_FREQ = 1.
 
 
-# Response parsers (thank Flakes8 and pylint for this...)
-def _p_address(arg):
-    return arg
+def _p_address(arg):    return arg
+def _p_button(arg):     return int(arg)
+def _p_enabled(arg):    return arg == 'enabled'
+def _p_level(arg):      return int(arg)
+def _p_ledstate(arg):   return [int(num) for num in arg]
 
-
-def _p_button(arg):
-    return int(arg)
-
-
-def _p_enabled(arg):
-    return arg == 'enabled'
-
-
-def _p_level(arg):
-    return int(arg)
-
-
-def _p_ledstate(arg):
-    return [int(num) for num in arg]
-
-
-def _norm(x):
-    return (x, _p_address, _p_button)
+def _norm(x): return (x, _p_address, _p_button)
 
 
 # Callback types
@@ -86,21 +70,30 @@ class Homeworks(Thread):
 
         self._running = False
         self._connect()
+        if self._socket == None:
+            raise ConnectionError("Couldn't connect to '%s:%d'" % (host, port))
         self.start()
 
     def _connect(self):
-        # Add userID and password
-        self._socket = socket.create_connection((self._host, self._port))
-        # Setup interface and subscribe to events
-        self._send('PROMPTOFF')     # No prompt is needed
-        self._send('KBMON')         # Monitor keypad events
-        self._send('GSMON')         # Monitor GRAFIKEYE scenes
-        self._send('DLMON')         # Monitor dimmer levels
-        self._send('KLMON')         # Monitor keypad LED states
+        try:
+            self._socket = socket.create_connection((self._host, self._port))
+            # Setup interface and subscribe to events
+            self._send('PROMPTOFF')     # No prompt is needed
+            self._send('KBMON')         # Monitor keypad events
+            self._send('GSMON')         # Monitor GRAFIKEYE scenes
+            self._send('DLMON')         # Monitor dimmer levels
+            self._send('KLMON')         # Monitor keypad LED states
+        except (BlockingIOError, ConnectionError, TimeoutError) as error:
+            _LOGGER.error("Connection: %s", error)
 
     def _send(self, command):
         _LOGGER.debug("send: %s", command)
-        self._socket.send((command+'\r').encode('utf8'))
+        try:
+            self._socket.send((command+'\r').encode('utf8'))
+            return True
+        except (ConnectionError, AttributeError):
+            self._socket = None
+            return False
 
     def fade_dim(self, intensity, fade_time, delay_time, addr):
         """Change the brightness of a light."""
@@ -116,27 +109,34 @@ class Homeworks(Thread):
         self._running = True
         data = ''
         while self._running:
-            try:
-                readable, _, _ = select.select([self._socket], [], [], POLLING_FREQ)
-            except socket.error as err:
-                raise
-            if len(readable) != 0:
-                byte = self._socket.recv(1)
-                if byte == b'\r':
-                    if len(data) > 0:
-                        self._processReceivedData(data)
-                    data = ''
-                elif byte != '\n':
-                    data += byte.decode('utf-8')
+            if self._socket == None:
+                time.sleep(POLLING_FREQ)
+                self._connect()
+            else:
+                try:
+                    readable, _, _ = select.select([self._socket], [], [], POLLING_FREQ)
+                    if len(readable) != 0:
+                        byte = self._socket.recv(1)
+                        if byte == b'\r':
+                            if len(data) > 0:
+                                self._processReceivedData(data)
+                            data = ''
+                        elif byte != '\n':
+                            data += byte.decode('utf-8')
+                except (ConnectionError, AttributeError):
+                    self._socket = None
 
     def _processReceivedData(self, data):
         _LOGGER.debug("Raw: %s", data)
-        raw_args = data.split(', ')
-        action = ACTIONS.get(raw_args[0], None)
-        if action and len(raw_args) == len(action):
-            args = [parser(arg) for parser, arg in
-                    zip(action[1:], raw_args[1:])]
-            self._callback(action[0], args)
+        try:
+            raw_args = data.split(', ')
+            action = ACTIONS.get(raw_args[0], None)
+            if action and len(raw_args) == len(action):
+                args = [parser(arg) for parser, arg in
+                        zip(action[1:], raw_args[1:])]
+                self._callback(action[0], args)
+        except ValueError:
+            _LOGGER.warning("Weird data: %s", data)
 
     def close(self):
         """Close the connection to the controller."""
