@@ -1,7 +1,12 @@
-cp -r ha/* ~/dev/home-assistant/homeassistant/components
+target=~/dev/home-assistant/homeassistant/components
+cp ha/homeworks.py $target
+cp ha/binary_sensor/homeworks.py $target/binary_sensor
+cp ha/light/homeworks.py $target/light
+
 cd ..
 pip uninstall pyhomeworks
 python3 setup.py sdist bdist_wheel
-pip install dist/pyhomeworks-0.0.1.tar.gz
+twine upload dist/*
+pip install pyhomeworks
 cd pyhomeworks
 

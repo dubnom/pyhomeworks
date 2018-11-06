@@ -46,7 +46,7 @@ def setup(hass, base_config):
         def _callback(self, msg_type, values):
             _LOGGER.debug('_callback: %s, %s', msg_type, values)
             addr = values[0]
-            for sub in self._subscribers.get(addr,[]):
+            for sub in self._subscribers.get(addr, []):
                 _LOGGER.debug("_callback: %s", sub)
                 if sub.callback(msg_type, values):
                     sub.schedule_update_ha_state()

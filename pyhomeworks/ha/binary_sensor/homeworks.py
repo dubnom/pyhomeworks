@@ -72,6 +72,7 @@ class HomeworksKeypad(HomeworksDevice, BinarySensorDevice):
                 "Button Number": self._num}
 
     def callback(self, msg_type, values):
+        """Dispatch messages from the controller."""
         from pyhomeworks.pyhomeworks import (
             HW_BUTTON_PRESSED, HW_BUTTON_RELEASED)
 
