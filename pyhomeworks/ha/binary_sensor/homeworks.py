@@ -4,18 +4,18 @@ For more details about this component, please refer to the documentation at
 https://home-assistant.io/components/homeworks/
 """
 import logging
-import voluptuous as vol
 from homeassistant.components.binary_sensor import (
     BinarySensorDevice, PLATFORM_SCHEMA)
 from homeassistant.components.homeworks import (
     HomeworksDevice, HOMEWORKS_CONTROLLER)
 from homeassistant.const import CONF_NAME
 import homeassistant.helpers.config_validation as cv
-
-_LOGGER = logging.getLogger(__name__)
+import voluptuous as vol
 
 DEPENDENCIES = ['homeworks']
 REQUIREMENTS = ['pyhomeworks==0.0.1']
+
+_LOGGER = logging.getLogger(__name__)
 
 EVENT_BUTTON_PRESSED = 'button_pressed'
 CONF_KEYPADS = 'keypads'

@@ -4,10 +4,10 @@ For more details about this component, please refer to the documentation at
 https://home-assistant.io/components/homeworks/
 """
 import logging
-import voluptuous as vol
 from homeassistant.const import (
     EVENT_HOMEASSISTANT_STOP, CONF_HOST, CONF_PORT)
 import homeassistant.helpers.config_validation as cv
+import voluptuous as vol
 
 REQUIREMENTS = ['pyhomeworks==0.0.1']
 
