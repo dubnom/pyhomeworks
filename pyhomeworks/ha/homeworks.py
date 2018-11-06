@@ -1,7 +1,7 @@
-"""
-Support for controlling Lutron Homeworks Series 4 and 8 systems.
+"""Component for interfacing to Lutron Homeworks Series 4 and 8 systems.
 
-Michael Dubno - 2018 - New York
+For more details about this component, please refer to the documentation at
+https://home-assistant.io/components/homeworks/
 """
 import logging
 import voluptuous as vol

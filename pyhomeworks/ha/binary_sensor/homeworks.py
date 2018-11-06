@@ -1,7 +1,7 @@
-"""
-Support for Lutron Homeworks Series 4/8 keypads.
+"""Component for interfacing to Lutron Homeworks keypads.
 
-Michael Dubno - 2018 - New York
+For more details about this component, please refer to the documentation at
+https://home-assistant.io/components/homeworks/
 """
 import logging
 import voluptuous as vol
