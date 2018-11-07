@@ -4,10 +4,10 @@ For more details about this component, please refer to the documentation at
 https://home-assistant.io/components/homeworks/
 """
 import logging
-from homeassistant.const import (
-    EVENT_HOMEASSISTANT_STOP, CONF_HOST, CONF_PORT)
-import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
+from homeassistant.const import (
+    CONF_HOST, CONF_PORT, EVENT_HOMEASSISTANT_STOP)
+import homeassistant.helpers.config_validation as cv
 
 REQUIREMENTS = ['pyhomeworks==0.0.1']
 
@@ -34,7 +34,7 @@ def setup(hass, base_config):
 
         def __init__(self, host, port):
             """Host and port of Lutron Homeworks controller."""
-            Homeworks.__init__(self, host, port, self._callback)
+            Homeworks.__init__(self, host, port, self.callback)
             self._subscribers = {}
 
         def register(self, device):
@@ -43,8 +43,9 @@ def setup(hass, base_config):
                 self._subscribers[device.addr] = []
             self._subscribers[device.addr].append(device)
 
-        def _callback(self, msg_type, values):
-            _LOGGER.debug('_callback: %s, %s', msg_type, values)
+        def callback(self, msg_type, values):
+            """Dispatch state changes."""
+            _LOGGER.debug('callback: %s, %s', msg_type, values)
             addr = values[0]
             for sub in self._subscribers.get(addr, []):
                 _LOGGER.debug("_callback: %s", sub)
@@ -88,8 +89,4 @@ class HomeworksDevice():
     @property
     def should_poll(self):
         """No need to poll."""
-        return False
-
-    def callback(self, msg_type, values):
-        """Must be replaced with device callbacks."""
         return False
