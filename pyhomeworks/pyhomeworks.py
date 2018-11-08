@@ -83,8 +83,9 @@ class Homeworks(Thread):
             self._send('GSMON')         # Monitor GRAFIKEYE scenes
             self._send('DLMON')         # Monitor dimmer levels
             self._send('KLMON')         # Monitor keypad LED states
+            _LOGGER.info("Connected to %s:%d", self._host, self._port)
         except (BlockingIOError, ConnectionError, TimeoutError) as error:
-            _LOGGER.error("Connection: %s", error)
+            pass
 
     def _send(self, command):
         _LOGGER.debug("send: %s", command)
@@ -124,6 +125,7 @@ class Homeworks(Thread):
                         elif byte != '\n':
                             data += byte.decode('utf-8')
                 except (ConnectionError, AttributeError):
+                    _LOGGER.warning("Lost connection.")
                     self._socket = None
 
     def _processReceivedData(self, data):

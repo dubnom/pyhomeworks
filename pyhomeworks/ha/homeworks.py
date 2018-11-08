@@ -10,7 +10,7 @@ from homeassistant.const import (
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.entity import Entity
 
-REQUIREMENTS = ['pyhomeworks==0.0.2']
+REQUIREMENTS = ['pyhomeworks==0.0.3']
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -49,7 +49,7 @@ def setup(hass, base_config):
             _LOGGER.debug('callback: %s, %s', msg_type, values)
             addr = values[0]
             for sub in self._subscribers.get(addr, []):
-                _LOGGER.debug("_callback: %s", sub)
+                _LOGGER.debug("callback: %s", sub)
                 if sub.callback(msg_type, values):
                     sub.schedule_update_ha_state()
 

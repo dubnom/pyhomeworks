@@ -13,7 +13,7 @@ from homeassistant.const import CONF_NAME
 import homeassistant.helpers.config_validation as cv
 
 DEPENDENCIES = ['homeworks']
-REQUIREMENTS = ['pyhomeworks==0.0.2']
+REQUIREMENTS = ['pyhomeworks==0.0.3']
 
 _LOGGER = logging.getLogger(__name__)
 
