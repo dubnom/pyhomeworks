@@ -13,7 +13,7 @@ from homeassistant.const import CONF_NAME
 import homeassistant.helpers.config_validation as cv
 
 DEPENDENCIES = ['homeworks']
-REQUIREMENTS = ['pyhomeworks==0.0.1']
+REQUIREMENTS = ['pyhomeworks==0.0.2']
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -65,12 +65,6 @@ class HomeworksKeypad(HomeworksDevice, BinarySensorDevice):
         """Return state of the button."""
         return self._state
 
-    @property
-    def device_state_attributes(self):
-        """Return supported attributes."""
-        return {"Homeworks Address": self._addr,
-                "Button Number": self._num}
-
     def callback(self, msg_type, values):
         """Dispatch messages from the controller."""
         from pyhomeworks.pyhomeworks import (
@@ -83,4 +77,4 @@ class HomeworksKeypad(HomeworksDevice, BinarySensorDevice):
             self._state = True
         elif msg_type == HW_BUTTON_RELEASED and values[1] == self._num:
             self._state = False
-        return old_state == self._state
+        return old_state != self._state

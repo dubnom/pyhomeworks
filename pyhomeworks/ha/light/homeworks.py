@@ -13,7 +13,7 @@ from homeassistant.const import CONF_NAME
 import homeassistant.helpers.config_validation as cv
 
 DEPENDENCIES = ['homeworks']
-REQUIREMENTS = ['pyhomeworks==0.0.1']
+REQUIREMENTS = ['pyhomeworks==0.0.2']
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -84,11 +84,6 @@ class HomeworksLight(HomeworksDevice, Light):
             float((level*100.)/255.), self._rate,
             0, self._addr)
         self._level = level
-
-    @property
-    def device_state_attributes(self):
-        """Supported attributes."""
-        return {'Homeworks Address': self._addr}
 
     @property
     def is_on(self):

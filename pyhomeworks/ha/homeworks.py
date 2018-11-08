@@ -8,8 +8,9 @@ import voluptuous as vol
 from homeassistant.const import (
     CONF_HOST, CONF_PORT, EVENT_HOMEASSISTANT_STOP)
 import homeassistant.helpers.config_validation as cv
+from homeassistant.helpers.entity import Entity
 
-REQUIREMENTS = ['pyhomeworks==0.0.1']
+REQUIREMENTS = ['pyhomeworks==0.0.2']
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -37,7 +38,7 @@ def setup(hass, base_config):
             Homeworks.__init__(self, host, port, self.callback)
             self._subscribers = {}
 
-        def register(self, device):
+        def subscribe(self, device):
             """Add a device to subscribe to events."""
             if device.addr not in self._subscribers:
                 self._subscribers[device.addr] = []
@@ -66,7 +67,7 @@ def setup(hass, base_config):
     return True
 
 
-class HomeworksDevice():
+class HomeworksDevice(Entity):
     """Base class of a Homeworks device."""
 
     def __init__(self, controller, addr, name):
@@ -74,7 +75,10 @@ class HomeworksDevice():
         self._addr = addr
         self._name = name
         self._controller = controller
-        controller.register(self)
+
+    async def async_added_to_hass(self):
+        """Register callback."""
+        self.hass.async_add_job(self._controller.subscribe, self)
 
     @property
     def addr(self):
@@ -90,3 +94,7 @@ class HomeworksDevice():
     def should_poll(self):
         """No need to poll."""
         return False
+
+    def callback(self, msg_type, values):
+        """Run when Homeworks device changes state."""
+        pass
