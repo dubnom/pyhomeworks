@@ -13,8 +13,8 @@ from homeassistant.const import CONF_NAME
 import homeassistant.helpers.config_validation as cv
 
 DEPENDENCIES = ['homeworks']
-REQUIREMENTS = ['pyhomeworks==0.0.3']
-33
+REQUIREMENTS = ['pyhomeworks==0.0.4']
+
 _LOGGER = logging.getLogger(__name__)
 
 FADE_RATE = 2.
@@ -55,7 +55,7 @@ class HomeworksLight(HomeworksDevice, Light):
         HomeworksDevice.__init__(self, controller, addr, name)
         self._rate = rate
         self._level = None
-        self._controller.request_dimmer_level(addr)
+        self.is_light = True
 
     @property
     def supported_features(self):

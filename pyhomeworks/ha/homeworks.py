@@ -10,7 +10,7 @@ from homeassistant.const import (
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.entity import Entity
 
-REQUIREMENTS = ['pyhomeworks==0.0.3']
+REQUIREMENTS = ['pyhomeworks==0.0.4']
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -43,6 +43,8 @@ def setup(hass, base_config):
             if device.addr not in self._subscribers:
                 self._subscribers[device.addr] = []
             self._subscribers[device.addr].append(device)
+            if device.is_light:
+                self.request_dimmer_level(device.addr)
 
         def callback(self, msg_type, values):
             """Dispatch state changes."""
@@ -69,6 +71,8 @@ def setup(hass, base_config):
 
 class HomeworksDevice(Entity):
     """Base class of a Homeworks device."""
+
+    is_light = False
 
     def __init__(self, controller, addr, name):
         """Controller, address, and name of the device."""
