@@ -121,12 +121,14 @@ class Homeworks(Thread):
                         if byte == b'\r':
                             if len(data) > 0:
                                 self._processReceivedData(data)
-                            data = ''
-                        elif byte != '\n':
+                                data = ''
+                        elif byte != b'\n':
                             data += byte.decode('utf-8')
                 except (ConnectionError, AttributeError):
                     _LOGGER.warning("Lost connection.")
                     self._socket = None
+                except UnicodeDecodeError:
+                    data = ''
 
     def _processReceivedData(self, data):
         _LOGGER.debug("Raw: %s", data)
@@ -137,6 +139,8 @@ class Homeworks(Thread):
                 args = [parser(arg) for parser, arg in
                         zip(action[1:], raw_args[1:])]
                 self._callback(action[0], args)
+            else:
+                _LOGGER.warning("Not handling: %s", raw_args)
         except ValueError:
             _LOGGER.warning("Weird data: %s", data)
 
