@@ -11,6 +11,7 @@ setuptools.setup(
     description="Lutron Homeworks Series 4 and 8 interface over Ethernet",
     long_description=long_description,
     long_description_content_type="text/markdown",
+    license="MIT",
     url="https://github.com/dubnom/pyhomeworks",
     packages=setuptools.find_packages(),
     classifiers=[
