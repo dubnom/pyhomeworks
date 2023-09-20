@@ -1,4 +1,4 @@
-# RFK101 Package
+# pyhomeworks Package
 
 Package to connect to Lutron Homeworks Series-4 and Series-8 systems.
 The controller is connected by an RS232 port to an Ethernet adaptor (NPort).
