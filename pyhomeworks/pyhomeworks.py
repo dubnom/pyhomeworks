@@ -78,16 +78,16 @@ class Homeworks(Thread):
         try:
             self._socket = socket.create_connection((self._host, self._port))
             # Setup interface and subscribe to events
-            self._send('PROMPTOFF')     # No prompt is needed
-            self._send('KBMON')         # Monitor keypad events
-            self._send('GSMON')         # Monitor GRAFIKEYE scenes
-            self._send('DLMON')         # Monitor dimmer levels
-            self._send('KLMON')         # Monitor keypad LED states
+            self.send('PROMPTOFF')     # No prompt is needed
+            self.send('KBMON')         # Monitor keypad events
+            self.send('GSMON')         # Monitor GRAFIKEYE scenes
+            self.send('DLMON')         # Monitor dimmer levels
+            self.send('KLMON')         # Monitor keypad LED states
             _LOGGER.info("Connected to %s:%d", self._host, self._port)
         except (BlockingIOError, ConnectionError, TimeoutError) as error:
             pass
 
-    def _send(self, command):
+    def send(self, command):
         _LOGGER.debug("send: %s", command)
         try:
             self._socket.send((command+'\r').encode('utf8'))
@@ -98,12 +98,12 @@ class Homeworks(Thread):
 
     def fade_dim(self, intensity, fade_time, delay_time, addr):
         """Change the brightness of a light."""
-        self._send('FADEDIM, %d, %d, %d, %s' %
+        self.send('FADEDIM, %d, %d, %d, %s' %
                    (intensity, fade_time, delay_time, addr))
 
     def request_dimmer_level(self, addr):
         """Request the controller to return brightness."""
-        self._send('RDL, %s' % addr)
+        self.send('RDL, %s' % addr)
 
     def run(self):
         """Read and dispatch messages from the controller."""
