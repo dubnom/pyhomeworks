@@ -9,11 +9,11 @@ The Series4/8 is connected to an RS232 port to an Ethernet adaptor (NPort).
 Michael Dubno - 2018 - New York
 """
 
-from threading import Thread
-import time
-import socket
-import select
 import logging
+import select
+import socket
+import time
+from threading import Thread
 
 _LOGGER = logging.getLogger(__name__)
 
