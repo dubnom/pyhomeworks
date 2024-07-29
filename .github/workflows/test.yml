@@ -31,7 +31,7 @@ jobs:
           black pyhomeworks --check --diff
       - name: Lint with mypy
         run: |
-          mypy pyhomeworks
+          mypy --strict pyhomeworks
       - name: Lint with pylint
         run: |
           pylint pyhomeworks
