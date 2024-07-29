@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools~=69.2.0", "wheel~=0.43.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name         = "pyhomeworks"
+version      = "0.0.6"
+authors = [
+  {name = "Michael Dubno", email = "michael@dubno.com"},
+]
+license      = {text = "MIT"}
+description  = "Lutron Homeworks Series 4 and 8 interface over Ethernet"
+readme       = "README.md"
+requires-python = ">=3.12.0"
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/dubnom/pyhomeworks"
+
+[tool.setuptools]
+platforms = ["any"]
+zip-safe  = true
+include-package-data = true
+
+[tool.setuptools.packages.find]
+include = ["pyhomeworks*"]
+
+[tool.setuptools.package-data]
+"*" = ["py.typed"]
