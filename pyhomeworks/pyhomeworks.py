@@ -85,8 +85,8 @@ class Homeworks(Thread):
 
         self._running = False
         self._connect()
-        if self._socket == None:
-            raise ConnectionError("Couldn't connect to '%s:%d'" % (host, port))
+        if self._socket is None:
+            raise ConnectionError(f"Couldn't connect to '{host}:{port}'")
         self.start()
 
     def _connect(self):
@@ -99,7 +99,7 @@ class Homeworks(Thread):
             self._send("DLMON")  # Monitor dimmer levels
             self._send("KLMON")  # Monitor keypad LED states
             _LOGGER.info("Connected to %s:%d", self._host, self._port)
-        except (BlockingIOError, ConnectionError, TimeoutError) as error:
+        except (BlockingIOError, ConnectionError, TimeoutError):
             pass
 
     def _send(self, command):
@@ -113,18 +113,18 @@ class Homeworks(Thread):
 
     def fade_dim(self, intensity, fade_time, delay_time, addr):
         """Change the brightness of a light."""
-        self._send("FADEDIM, %d, %d, %d, %s" % (intensity, fade_time, delay_time, addr))
+        self._send(f"FADEDIM, {intensity}, {fade_time}, {delay_time}, {addr}")
 
     def request_dimmer_level(self, addr):
         """Request the controller to return brightness."""
-        self._send("RDL, %s" % addr)
+        self._send(f"RDL, {addr}")
 
     def run(self):
         """Read and dispatch messages from the controller."""
         self._running = True
         data = ""
-        while self._running:
-            if self._socket == None:
+        while self._running:  # pylint: disable=too-many-nested-blocks
+            if self._socket is None:
                 time.sleep(POLLING_FREQ)
                 self._connect()
             else:
@@ -134,7 +134,7 @@ class Homeworks(Thread):
                         byte = self._socket.recv(1)
                         if byte == b"\r":
                             if len(data) > 0:
-                                self._processReceivedData(data)
+                                self._process_received_data(data)
                                 data = ""
                         elif byte != b"\n":
                             data += byte.decode("utf-8")
@@ -144,7 +144,7 @@ class Homeworks(Thread):
                 except UnicodeDecodeError:
                     data = ""
 
-    def _processReceivedData(self, data):
+    def _process_received_data(self, data):
         _LOGGER.debug("Raw: %s", data)
         try:
             raw_args = data.split(", ")
