@@ -73,6 +73,13 @@ ACTIONS: dict[str, tuple[str, Callable[[str], str], Callable[[str], Any]]] = {
     "KES": (HW_KEYPAD_ENABLE_CHANGED, _p_address, _p_enabled),
 }
 
+IGNORED = {
+    "Keypad button monitoring enabled",
+    "GrafikEye scene monitoring enabled",
+    "Dimmer level monitoring enabled",
+    "Keypad led monitoring enabled",
+}
+
 
 class Homeworks(Thread):
     """Interface with a Lutron Homeworks 4/8 Series system."""
@@ -148,6 +155,8 @@ class Homeworks(Thread):
 
     def _process_received_data(self, data: str) -> None:
         _LOGGER.debug("Raw: %s", data)
+        if data in IGNORED:
+            return
         try:
             raw_args = data.split(", ")
             action = ACTIONS.get(raw_args[0], None)
