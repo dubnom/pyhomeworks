@@ -93,7 +93,7 @@ class Homeworks(Thread):
     LOGIN_PROMPT_WAIT_TIME: Final = 0.2
     SOCKET_CONNECT_TIMEOUT: Final = 10.0
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         host: str,
         port: int,
