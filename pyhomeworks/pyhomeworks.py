@@ -54,6 +54,7 @@ HW_BUTTON_RELEASED = "button_released"
 HW_KEYPAD_ENABLE_CHANGED = "keypad_enable_changed"
 HW_KEYPAD_LED_CHANGED = "keypad_led_changed"
 HW_LIGHT_CHANGED = "light_changed"
+HW_LOGIN_INCORRECT = "login_incorrect"
 
 ACTIONS: dict[str, tuple[str, Callable[[str], str], Callable[[str], Any]]] = {
     "KBP": _norm(HW_BUTTON_PRESSED),
@@ -85,16 +86,25 @@ class Homeworks(Thread):
     """Interface with a Lutron Homeworks 4/8 Series system."""
 
     COMMAND_SEPARATOR: Final = b"\r\n"
+    LOGIN_REQUEST: Final = b"LOGIN: "
+    LOGIN_INCORRECT: Final = b"login incorrect"
+    LOGIN_SUCCESSFUL: Final = b"login successful"
     POLLING_FREQ: Final = 1.0
+    LOGIN_PROMPT_WAIT_TIME: Final = 0.2
     SOCKET_CONNECT_TIMEOUT: Final = 10.0
 
     def __init__(
-        self, host: str, port: int, callback: Callable[[Any, Any], None]
+        self,
+        host: str,
+        port: int,
+        callback: Callable[[Any, Any], None],
+        login: str | None = None,
     ) -> None:
         """Initialize."""
         Thread.__init__(self)
         self._host = host
         self._port = port
+        self._login = login
         self._callback = callback
         self._socket: socket.socket | None = None
 
@@ -106,9 +116,9 @@ class Homeworks(Thread):
         It's not necessary to call this method, but it can be useed to attempt to
         connect to the remote device without starting the worker thread.
         """
-        self._connect()
+        self._connect(False)
 
-    def _connect(self) -> None:
+    def _connect(self, callback_on_login_error: bool) -> None:
         """Connect to controller using host, port."""
         try:
             self._socket = socket.create_connection(
@@ -128,8 +138,35 @@ class Homeworks(Thread):
 
         _LOGGER.info("Connected to '%s:%s'", self._host, self._port)
 
+        # Wait for login prompt
+        time.sleep(self.LOGIN_PROMPT_WAIT_TIME)
+        buffer = self._read()
+        while buffer.startswith(self.COMMAND_SEPARATOR):
+            buffer = buffer[len(self.COMMAND_SEPARATOR) :]
+        if buffer.startswith(self.LOGIN_REQUEST):
+            try:
+                self._handle_login_request(callback_on_login_error)
+            except exceptions.HomeworksException:
+                self._close()
+                raise
+
         # Setup interface and subscribe to events
         self._subscribe()
+
+    def _handle_login_request(self, callback_on_login_error: bool) -> None:
+        if not self._login:
+            raise exceptions.HomeworksNoCredentialsProvided
+        self._send(self._login)
+
+        buffer = self._read()
+        while buffer.startswith(self.COMMAND_SEPARATOR):
+            buffer = buffer[len(self.COMMAND_SEPARATOR) :]
+        if buffer.startswith(self.LOGIN_INCORRECT):
+            if callback_on_login_error:
+                self._callback(HW_LOGIN_INCORRECT, [])
+            raise exceptions.HomeworksInvalidCredentialsProvided
+        if buffer.startswith(self.LOGIN_SUCCESSFUL):
+            _LOGGER.debug("Login successful")
 
     def _read(self) -> bytes:
         readable, _, _ = select.select([self._socket], [], [], self.POLLING_FREQ)
@@ -168,7 +205,7 @@ class Homeworks(Thread):
         while self._running:  # pylint: disable=too-many-nested-blocks
             if self._socket is None:
                 with suppress(exceptions.HomeworksException):
-                    self._connect()
+                    self._connect(True)
             else:
                 try:
                     buffer += self._read()
