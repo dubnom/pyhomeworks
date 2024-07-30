@@ -131,7 +131,7 @@ class Homeworks(Thread):
     def run(self) -> None:
         """Read and dispatch messages from the controller."""
         self._running = True
-        data = ""
+        data = b""
         while self._running:  # pylint: disable=too-many-nested-blocks
             if self._socket is None:
                 time.sleep(POLLING_FREQ)
@@ -144,17 +144,22 @@ class Homeworks(Thread):
                         if byte == b"\r":
                             if len(data) > 0:
                                 self._process_received_data(data)
-                                data = ""
+                                data = b""
                         elif byte != b"\n":
-                            data += byte.decode("utf-8")
+                            data += byte
                 except (ConnectionError, AttributeError):
                     _LOGGER.warning("Lost connection.")
                     self._socket = None
                 except UnicodeDecodeError:
-                    data = ""
+                    data = b""
 
-    def _process_received_data(self, data: str) -> None:
-        _LOGGER.debug("Raw: %s", data)
+    def _process_received_data(self, data_b: bytes) -> None:
+        _LOGGER.debug("Raw: %s", data_b)
+        try:
+            data = data_b.decode("utf-8")
+        except UnicodeDecodeError:
+            _LOGGER.warning("Invalid data: %s", data)
+            return
         if data in IGNORED:
             return
         try:
