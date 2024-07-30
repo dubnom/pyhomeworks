@@ -101,7 +101,11 @@ class Homeworks(Thread):
         self._running = False
 
     def connect(self) -> None:
-        """Connect to controller using host, port."""
+        """Connect to controller using host, port.
+
+        It's not necessary to call this method, but it can be useed to attempt to
+        connect to the remote device without starting the worker thread.
+        """
         self._connect()
 
     def _connect(self) -> None:
