@@ -1,5 +1,4 @@
-"""
-Homeworks.
+"""Homeworks.
 
 A partial implementation of an interface to series-4 and series-8 Lutron
 Homeworks systems.
@@ -13,8 +12,8 @@ from collections.abc import Callable
 import logging
 import select
 import socket
-import time
 from threading import Thread
+import time
 from typing import Any
 
 _LOGGER = logging.getLogger(__name__)
