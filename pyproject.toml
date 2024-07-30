@@ -31,3 +31,10 @@ include = ["pyhomeworks*"]
 
 [tool.setuptools.package-data]
 "*" = ["py.typed"]
+
+[tool.pylint."MESSAGES CONTROL"]
+# Reasons disabled:
+# format - handled by black
+disable = [
+    "format",
+]

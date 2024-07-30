@@ -129,8 +129,7 @@ class Homeworks(Thread):
         except (ConnectionError, AttributeError):
             self._close()
             return False
-        else:
-            return True
+        return True
 
     def fade_dim(
         self, intensity: float, fade_time: float, delay_time: float, addr: str
