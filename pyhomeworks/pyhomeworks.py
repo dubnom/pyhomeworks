@@ -20,8 +20,6 @@ from . import exceptions
 
 _LOGGER = logging.getLogger(__name__)
 
-POLLING_FREQ = 1.0
-
 
 def _p_address(arg: str) -> str:
     return arg
@@ -86,6 +84,7 @@ class Homeworks(Thread):
     """Interface with a Lutron Homeworks 4/8 Series system."""
 
     COMMAND_SEPARATOR: Final = b"\r\n"
+    POLLING_FREQ: Final = 1.0
 
     def __init__(
         self, host: str, port: int, callback: Callable[[Any, Any], None]
@@ -204,7 +203,7 @@ class Homeworks(Thread):
     def _close(self) -> None:
         """Close the connection to the controller."""
         if self._socket:
-            time.sleep(POLLING_FREQ)
+            time.sleep(self.POLLING_FREQ)
             self._socket.close()
             self._socket = None
 
