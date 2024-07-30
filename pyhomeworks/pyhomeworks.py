@@ -97,11 +97,7 @@ class Homeworks(Thread):
         try:
             self._socket = socket.create_connection((self._host, self._port))
             # Setup interface and subscribe to events
-            self._send("PROMPTOFF")  # No prompt is needed
-            self._send("KBMON")  # Monitor keypad events
-            self._send("GSMON")  # Monitor GRAFIKEYE scenes
-            self._send("DLMON")  # Monitor dimmer levels
-            self._send("KLMON")  # Monitor keypad LED states
+            self._subscribe()
             _LOGGER.info("Connected to %s:%d", self._host, self._port)
         except (BlockingIOError, ConnectionError, TimeoutError):
             pass
@@ -170,3 +166,11 @@ class Homeworks(Thread):
             time.sleep(POLLING_FREQ)
             self._socket.close()
             self._socket = None
+
+    def _subscribe(self) -> None:
+        # Setup interface and subscribe to events
+        self._send("PROMPTOFF")  # No prompt is needed
+        self._send("KBMON")  # Monitor keypad events
+        self._send("GSMON")  # Monitor GRAFIKEYE scenes
+        self._send("DLMON")  # Monitor dimmer levels
+        self._send("KLMON")  # Monitor keypad LED states
