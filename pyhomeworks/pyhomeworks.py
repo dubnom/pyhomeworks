@@ -158,7 +158,7 @@ class Homeworks(Thread):
         try:
             data = data_b.decode("utf-8")
         except UnicodeDecodeError:
-            _LOGGER.warning("Invalid data: %s", data)
+            _LOGGER.warning("Invalid data: %s", data_b)
             return
         if data in IGNORED:
             return
