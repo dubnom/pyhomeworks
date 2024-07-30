@@ -168,7 +168,7 @@ class Homeworks(Thread):
         while self._running:  # pylint: disable=too-many-nested-blocks
             if self._socket is None:
                 with suppress(exceptions.HomeworksException):
-                    self._connect(True)
+                    self._connect()
             else:
                 try:
                     buffer += self._read()
