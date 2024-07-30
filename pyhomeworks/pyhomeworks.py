@@ -154,14 +154,20 @@ class Homeworks(Thread):
                 try:
                     buffer += self._read()
                     while True:
-                        (command, separator, remainder) = buffer.partition(self.COMMAND_SEPARATOR)
+                        (command, separator, remainder) = buffer.partition(
+                            self.COMMAND_SEPARATOR
+                        )
                         if separator != self.COMMAND_SEPARATOR:
                             break
                         buffer = remainder
                         if not command:
                             continue
                         self._process_received_data(command)
-                except (ConnectionError, AttributeError, exceptions.HomeworksConnectionLost):
+                except (
+                    ConnectionError,
+                    AttributeError,
+                    exceptions.HomeworksConnectionLost,
+                ):
                     _LOGGER.warning("Lost connection.")
                     self._close()
                     buffer = b""

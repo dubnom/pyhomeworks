@@ -1,5 +1,6 @@
 """Homeworks exceptions."""
 
+
 class HomeworksException(Exception):
     """Base class for exceptions."""
 
