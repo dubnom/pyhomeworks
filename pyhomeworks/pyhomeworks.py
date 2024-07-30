@@ -115,7 +115,7 @@ class Homeworks(Thread):
             self._socket.send((command + "\r").encode("utf8"))  # type: ignore[union-attr]
             return True
         except (ConnectionError, AttributeError):
-            self._socket = None
+            self._close()
             return False
 
     def fade_dim(
@@ -149,9 +149,11 @@ class Homeworks(Thread):
                             data += byte
                 except (ConnectionError, AttributeError):
                     _LOGGER.warning("Lost connection.")
-                    self._socket = None
+                    self._close()
                 except UnicodeDecodeError:
                     data = b""
+
+        self._close()
 
     def _process_received_data(self, data_b: bytes) -> None:
         _LOGGER.debug("Raw: %s", data_b)
@@ -176,6 +178,10 @@ class Homeworks(Thread):
     def close(self) -> None:
         """Close the connection to the controller."""
         self._running = False
+        self._close()
+
+    def _close(self) -> None:
+        """Close the connection to the controller."""
         if self._socket:
             time.sleep(POLLING_FREQ)
             self._socket.close()
