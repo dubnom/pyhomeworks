@@ -14,11 +14,11 @@ import select
 import socket
 from threading import Thread
 import time
-from typing import Any
+from typing import Any, Final
+
+from . import exceptions
 
 _LOGGER = logging.getLogger(__name__)
-
-POLLING_FREQ = 1.0
 
 
 def _p_address(arg: str) -> str:
@@ -83,6 +83,9 @@ IGNORED = {
 class Homeworks(Thread):
     """Interface with a Lutron Homeworks 4/8 Series system."""
 
+    COMMAND_SEPARATOR: Final = b"\r\n"
+    POLLING_FREQ: Final = 1.0
+
     def __init__(
         self, host: str, port: int, callback: Callable[[Any, Any], None]
     ) -> None:
@@ -108,14 +111,25 @@ class Homeworks(Thread):
         except (BlockingIOError, ConnectionError, TimeoutError):
             pass
 
+    def _read(self) -> bytes:
+        readable, _, _ = select.select([self._socket], [], [], self.POLLING_FREQ)
+        if not readable:
+            return b""
+        recv = self._socket.recv(1024)  # type: ignore[union-attr]
+        if not recv:
+            self._close()
+            raise exceptions.HomeworksConnectionLost
+        _LOGGER.debug("recv: %s", recv)
+        return recv
+
     def _send(self, command: str) -> bool:
         _LOGGER.debug("send: %s", command)
         try:
-            self._socket.send((command + "\r").encode("utf8"))  # type: ignore[union-attr]
-            return True
+            self._socket.send(command.encode("utf8") + self.COMMAND_SEPARATOR)  # type: ignore[union-attr]
         except (ConnectionError, AttributeError):
             self._close()
             return False
+        return True
 
     def fade_dim(
         self, intensity: float, fade_time: float, delay_time: float, addr: str
@@ -133,22 +147,30 @@ class Homeworks(Thread):
         buffer = b""
         while self._running:  # pylint: disable=too-many-nested-blocks
             if self._socket is None:
-                time.sleep(POLLING_FREQ)
                 self._connect()
             else:
                 try:
-                    readable, _, _ = select.select([self._socket], [], [], POLLING_FREQ)
-                    if len(readable) != 0:
-                        byte = self._socket.recv(1)
-                        if byte == b"\r":
-                            if len(buffer) > 0:
-                                self._process_received_data(buffer)
-                                buffer = b""
-                        elif byte != b"\n":
-                            buffer += byte
-                except (ConnectionError, AttributeError):
+                    buffer += self._read()
+                    while True:
+                        (command, separator, remainder) = buffer.partition(
+                            self.COMMAND_SEPARATOR
+                        )
+                        if separator != self.COMMAND_SEPARATOR:
+                            break
+                        buffer = remainder
+                        if not command:
+                            continue
+                        self._process_received_data(command)
+                except (
+                    ConnectionError,
+                    AttributeError,
+                    exceptions.HomeworksConnectionLost,
+                ):
                     _LOGGER.warning("Lost connection.")
                     self._close()
+                    buffer = b""
+                    if self._running:
+                        time.sleep(self.POLLING_FREQ)
 
         self._close()
 
@@ -180,7 +202,7 @@ class Homeworks(Thread):
     def _close(self) -> None:
         """Close the connection to the controller."""
         if self._socket:
-            time.sleep(POLLING_FREQ)
+            time.sleep(self.POLLING_FREQ)
             self._socket.close()
             self._socket = None
 
