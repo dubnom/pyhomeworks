@@ -290,6 +290,6 @@ def _format_credentials(username: str | None, password: str | None) -> str | Non
         )
     if password is not None:
         return f"{username}, {password}"
-    elif username is not None:
+    if username is not None:
         return username
     return None
