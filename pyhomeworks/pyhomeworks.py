@@ -98,13 +98,13 @@ class Homeworks(Thread):
         host: str,
         port: int,
         callback: Callable[[Any, Any], None],
-        login: str | None = None,
+        credentials: str | None = None,
     ) -> None:
         """Initialize."""
         Thread.__init__(self)
         self._host = host
         self._port = port
-        self._login = login
+        self._credentials = credentials
         self._callback = callback
         self._socket: socket.socket | None = None
 
@@ -154,9 +154,9 @@ class Homeworks(Thread):
         self._subscribe()
 
     def _handle_login_request(self, callback_on_login_error: bool) -> None:
-        if not self._login:
+        if not self._credentials:
             raise exceptions.HomeworksNoCredentialsProvided
-        self._send(self._login)
+        self._send(self._credentials)
 
         buffer = self._read()
         while buffer.startswith(self.COMMAND_SEPARATOR):
