@@ -98,13 +98,14 @@ class Homeworks(Thread):
         host: str,
         port: int,
         callback: Callable[[Any, Any], None],
-        credentials: str | None = None,
+        username: str | None = None,
+        password: str | None = None,
     ) -> None:
         """Initialize."""
         Thread.__init__(self)
         self._host = host
         self._port = port
-        self._credentials = credentials
+        self._credentials = _format_credentials(username, password)
         self._callback = callback
         self._socket: socket.socket | None = None
 
@@ -279,3 +280,16 @@ class Homeworks(Thread):
         self._send("GSMON")  # Monitor GRAFIKEYE scenes
         self._send("DLMON")  # Monitor dimmer levels
         self._send("KLMON")  # Monitor keypad LED states
+
+
+def _format_credentials(username: str | None, password: str | None) -> str | None:
+    """Return a credential string from username and password."""
+    if password is not None and username is None:
+        raise exceptions.HomeworksInvalidCredentialsProvided(
+            "Username must be provided if password is not None"
+        )
+    if password is not None:
+        return f"{username}, {password}"
+    elif username is not None:
+        return username
+    return None
