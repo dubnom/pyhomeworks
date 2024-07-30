@@ -12,9 +12,10 @@ The controller is connected by an RS232 port to an Ethernet adaptor (NPort).
         print(msg,data)
 
     hw = Homeworks( 'host.test.com', 4008, callback )
+    hw.start()
 
     # Sleep for 10 seconds waiting for a callback
     sleep(10.)
 
-    # Close the interface
-    hw.close()
+    # Close the interface and stop the worker thread
+    hw.stop()

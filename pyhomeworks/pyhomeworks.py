@@ -9,6 +9,7 @@ Michael Dubno - 2018 - New York
 """
 
 from collections.abc import Callable
+from contextlib import suppress
 import logging
 import select
 import socket
@@ -90,7 +91,7 @@ class Homeworks(Thread):
     def __init__(
         self, host: str, port: int, callback: Callable[[Any, Any], None]
     ) -> None:
-        """Connect to controller using host, port."""
+        """Initialize."""
         Thread.__init__(self)
         self._host = host
         self._port = port
@@ -98,21 +99,37 @@ class Homeworks(Thread):
         self._socket: socket.socket | None = None
 
         self._running = False
+
+    def connect(self) -> None:
+        """Connect to controller using host, port.
+
+        It's not necessary to call this method, but it can be useed to attempt to
+        connect to the remote device without starting the worker thread.
+        """
         self._connect()
-        if self._socket is None:
-            raise ConnectionError(f"Couldn't connect to '{host}:{port}'")
-        self.start()
 
     def _connect(self) -> None:
+        """Connect to controller using host, port."""
         try:
             self._socket = socket.create_connection(
                 (self._host, self._port), self.SOCKET_CONNECT_TIMEOUT
             )
-            # Setup interface and subscribe to events
-            self._subscribe()
-            _LOGGER.info("Connected to %s:%d", self._host, self._port)
-        except (BlockingIOError, ConnectionError, TimeoutError):
-            pass
+        except (OSError, ValueError) as error:
+            _LOGGER.debug(
+                "Failed to connect to %s:%s - %s",
+                self._host,
+                self._port,
+                error,
+                exc_info=True,
+            )
+            raise exceptions.HomeworksConnectionFailed(
+                f"Couldn't connect to '{self._host}:{self._port}'"
+            ) from error
+
+        _LOGGER.info("Connected to '%s:%s'", self._host, self._port)
+
+        # Setup interface and subscribe to events
+        self._subscribe()
 
     def _read(self) -> bytes:
         readable, _, _ = select.select([self._socket], [], [], self.POLLING_FREQ)
@@ -150,7 +167,8 @@ class Homeworks(Thread):
         buffer = b""
         while self._running:  # pylint: disable=too-many-nested-blocks
             if self._socket is None:
-                self._connect()
+                with suppress(exceptions.HomeworksException):
+                    self._connect()
             else:
                 try:
                     buffer += self._read()
@@ -175,6 +193,7 @@ class Homeworks(Thread):
                     if self._running:
                         time.sleep(self.POLLING_FREQ)
 
+        self._running = False
         self._close()
 
     def _process_received_data(self, data_b: bytes) -> None:
@@ -199,15 +218,22 @@ class Homeworks(Thread):
 
     def close(self) -> None:
         """Close the connection to the controller."""
-        self._running = False
+        if self._running:
+            raise exceptions.HomeworksException(
+                "Can't call close when thread is running"
+            )
         self._close()
 
     def _close(self) -> None:
         """Close the connection to the controller."""
         if self._socket:
-            time.sleep(self.POLLING_FREQ)
             self._socket.close()
             self._socket = None
+
+    def stop(self) -> None:
+        """Wait for the worker thread to stop."""
+        self._running = False
+        self.join()
 
     def _subscribe(self) -> None:
         # Setup interface and subscribe to events

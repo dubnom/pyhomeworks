@@ -14,11 +14,12 @@ def callback(msg, args):
 
 print("Starting interace")
 hw = Homeworks('192.168.2.55', 4008, callback)
+hw.start()
 
 print("Connected. Waiting for messages.")
 time.sleep(10.)
 
 print("Closing.")
-hw.close()
+hw.stop()
 
 print("Done.")
