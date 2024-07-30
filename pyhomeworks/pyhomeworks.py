@@ -85,6 +85,7 @@ class Homeworks(Thread):
 
     COMMAND_SEPARATOR: Final = b"\r\n"
     POLLING_FREQ: Final = 1.0
+    SOCKET_CONNECT_TIMEOUT: Final = 10.0
 
     def __init__(
         self, host: str, port: int, callback: Callable[[Any, Any], None]
@@ -104,7 +105,9 @@ class Homeworks(Thread):
 
     def _connect(self) -> None:
         try:
-            self._socket = socket.create_connection((self._host, self._port))
+            self._socket = socket.create_connection(
+                (self._host, self._port), self.SOCKET_CONNECT_TIMEOUT
+            )
             # Setup interface and subscribe to events
             self._subscribe()
             _LOGGER.info("Connected to %s:%d", self._host, self._port)
