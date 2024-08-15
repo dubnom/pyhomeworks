@@ -145,7 +145,7 @@ class Homeworks(Thread):
         time.sleep(self.LOGIN_PROMPT_WAIT_TIME)
         buffer = self._read()
         while buffer.startswith(self.LINE_ENDING_CHARACTERS):
-            buffer = buffer[1 :]
+            buffer = buffer[1:]
         if buffer.startswith(self.LOGIN_REQUEST):
             try:
                 self._handle_login_request(callback_on_login_error)
@@ -163,7 +163,7 @@ class Homeworks(Thread):
 
         buffer = self._read()
         while buffer.startswith(self.LINE_ENDING_CHARACTERS):
-            buffer = buffer[1 :]
+            buffer = buffer[1:]
         if buffer.startswith(self.LOGIN_INCORRECT):
             if callback_on_login_error:
                 self._callback(HW_LOGIN_INCORRECT, [])
@@ -220,7 +220,7 @@ class Homeworks(Thread):
                             break
                         buffer = remainder
                         while buffer.startswith(self.LINE_ENDING_CHARACTERS):
-                            buffer = buffer[1 :]
+                            buffer = buffer[1:]
                         if not command:
                             continue
                         self._process_received_data(command)
