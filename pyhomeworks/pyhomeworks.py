@@ -85,7 +85,9 @@ IGNORED = {
 class Homeworks(Thread):
     """Interface with a Lutron Homeworks 4/8 Series system."""
 
-    COMMAND_SEPARATOR: Final = b"\r\n"
+    COMMAND_SEPARATOR_RX: Final = b"\r"
+    COMMAND_SEPARATOR_TX: Final = b"\r\n"
+    LINE_ENDING_CHARACTERS: Final = (b"\r", b"\n")
     LOGIN_REQUEST: Final = b"LOGIN: "
     LOGIN_INCORRECT: Final = b"login incorrect"
     LOGIN_SUCCESSFUL: Final = b"login successful"
@@ -142,8 +144,8 @@ class Homeworks(Thread):
         # Wait for login prompt
         time.sleep(self.LOGIN_PROMPT_WAIT_TIME)
         buffer = self._read()
-        while buffer.startswith(self.COMMAND_SEPARATOR):
-            buffer = buffer[len(self.COMMAND_SEPARATOR) :]
+        while buffer.startswith(self.LINE_ENDING_CHARACTERS):
+            buffer = buffer[1:]
         if buffer.startswith(self.LOGIN_REQUEST):
             try:
                 self._handle_login_request(callback_on_login_error)
@@ -160,8 +162,8 @@ class Homeworks(Thread):
         self._send(self._credentials)
 
         buffer = self._read()
-        while buffer.startswith(self.COMMAND_SEPARATOR):
-            buffer = buffer[len(self.COMMAND_SEPARATOR) :]
+        while buffer.startswith(self.LINE_ENDING_CHARACTERS):
+            buffer = buffer[1:]
         if buffer.startswith(self.LOGIN_INCORRECT):
             if callback_on_login_error:
                 self._callback(HW_LOGIN_INCORRECT, [])
@@ -183,7 +185,7 @@ class Homeworks(Thread):
     def _send(self, command: str) -> bool:
         _LOGGER.debug("send: %s", command)
         try:
-            self._socket.send(command.encode("utf8") + self.COMMAND_SEPARATOR)  # type: ignore[union-attr]
+            self._socket.send(command.encode("utf8") + self.COMMAND_SEPARATOR_TX)  # type: ignore[union-attr]
         except (ConnectionError, AttributeError):
             self._close()
             return False
@@ -212,11 +214,13 @@ class Homeworks(Thread):
                     buffer += self._read()
                     while True:
                         (command, separator, remainder) = buffer.partition(
-                            self.COMMAND_SEPARATOR
+                            self.COMMAND_SEPARATOR_RX
                         )
-                        if separator != self.COMMAND_SEPARATOR:
+                        if separator != self.COMMAND_SEPARATOR_RX:
                             break
                         buffer = remainder
+                        while buffer.startswith(self.LINE_ENDING_CHARACTERS):
+                            buffer = buffer[1:]
                         if not command:
                             continue
                         self._process_received_data(command)
