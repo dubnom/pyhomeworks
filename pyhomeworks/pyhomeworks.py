@@ -194,9 +194,14 @@ class Homeworks(Thread):
     def fade_dim(
         self, intensity: float, fade_time: float, delay_time: float, addr: str
     ) -> None:
-        """Change the brightness of a light."""
+        """Change the brightness of a light.
+
+        Intensity, fade_time and delay_time are rounded because some controllers
+        don't accept decimals.
+        """
         self._send(
-            f"FADEDIM, {round(intensity)}, {round(fade_time)}, {round(delay_time)}, {addr}"
+            "FADEDIM, "
+            f"{round(intensity)}, {round(fade_time)}, {round(delay_time)}, {addr}"
         )
 
     def request_dimmer_level(self, addr: str) -> None:
