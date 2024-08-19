@@ -106,7 +106,7 @@ class Homeworks(Thread):
         """Initialize."""
         Thread.__init__(self)
         self._host = host
-        self._port = port
+        self._port = int(port)
         self._credentials = _format_credentials(username, password)
         self._callback = callback
         self._socket: socket.socket | None = None
@@ -195,7 +195,9 @@ class Homeworks(Thread):
         self, intensity: float, fade_time: float, delay_time: float, addr: str
     ) -> None:
         """Change the brightness of a light."""
-        self._send(f"FADEDIM, {intensity}, {fade_time}, {delay_time}, {addr}")
+        self._send(
+            f"FADEDIM, {round(intensity)}, {round(fade_time)}, {round(delay_time)}, {addr}"
+        )
 
     def request_dimmer_level(self, addr: str) -> None:
         """Request the controller to return brightness."""
