@@ -35,7 +35,7 @@ def _p_enabled(arg: str) -> bool:
 
 
 def _p_level(arg: str) -> int:
-    return int(arg)
+    return round(float(arg))
 
 
 def _p_ledstate(arg: str) -> list[int]:
